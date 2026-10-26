@@ -1,0 +1,22 @@
+{
+  "name": "Владимир (@vladimiruss)",
+  "fonts": {"head": "montserrat", "body": "manrope"},
+  "colors": {"accent": "#FFCF4D", "ui": "#D9B25B", "caption": "#FFFFFF", "plate": "#FFFFFF", "plate_text": "#111111",
+             "card": "#FFFFFF", "card_text": "#141414", "card_accent": "#C98A00", "panel_bg": "#0C0C0E", "panel_glow": "#C9A24B"},
+  "captions": {"mode": "phrase", "case": "as_is", "style": "shadow", "size": 94, "y": 1530, "max_chars": 17},
+  "hook": {"style": "plate", "y": 280, "size": 82},
+  "cards": {"top": 1190},
+  "safe_top": 140,
+  "face_y": 740,
+  "split": {"shift": 270, "dots": true},
+  "pacing": "tight",
+  "speed": null,
+  "graphics": "balanced",
+  "sfx": "subtle",
+  "punch_in": true,
+  "max_seconds": 60,
+  "cta": {"word": null, "show_in_video": true},
+  "accent_words": ["ChatGPT", "Claude"],
+  "fixes": {},
+  "audio": {"denoise": false}
+}

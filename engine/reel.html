@@ -1,0 +1,9 @@
+<!doctype html>
+<!-- Обёртка для render.py: движок в reel.js. Ничего не рисуйте здесь руками для отдельного ролика. -->
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="reel.js"></script>
+<script>
+const E=ReelEngine(document.getElementById("c"),{fonts:"local"});
+window.init=E.init;window.frame=E.frame;window.warnings=E.warnings;
+</script></body></html>
