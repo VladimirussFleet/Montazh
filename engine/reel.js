@@ -341,7 +341,8 @@ function cardH(c){switch(c.type){
   case "number":return c.label?300:220;
   case "cta":return 150;case "follow":return 112;case "sticker":return (c.size||220);default:return PART[c.type]?PART[c.type].h(c):300}}
 let CARD_BOTTOM=0;
-function cards(t,k){CARD_BOTTOM=0;for(const c of TL.cards||[]){if(c.type==="image"&&c.size==="full")continue;if(k>0.01&&!c.in_split)continue;const st=cardState(t,c);if(!st)continue;const f=CARD[c.type];if(!f){warn("unknown card "+c.type);continue}
+function cards(t,k,layer){CARD_BOTTOM=0;for(const c of TL.cards||[]){if(c.type==="image"&&c.size==="full")continue;if(k>0.01&&!c.in_split)continue;
+  if(layer==="behind"?!c.behind:(c.behind&&PERSON))continue;const st=cardState(t,c);if(!st)continue;const f=CARD[c.type];if(!f){warn("unknown card "+c.type);continue}
   const h=cardH(c),cy=c.y!=null?c.y:B.cards.top+h/2;if(c.y==null&&c.type!=="sticker"&&st.a>0.5)CARD_BOTTOM=Math.max(CARD_BOTTOM,cy+h/2);
   g.save();g.globalAlpha=st.a;g.translate(c.x||540,cy+(1-eOut3(st.d/0.42))*40);g.scale(st.s,st.s);f(c,st,t);g.restore()}}
 
@@ -365,12 +366,31 @@ function subtitles(t,k){const S=TL.subs||[];let cur=null;for(const x of S)if(t>=
   g.restore()}
 
 // ---------- frame ----------
+// ---------- person cut out of the background (masks from scripts/cutout.py, or the right half of a side-by-side proxy) ----------
+let PERSON=false,PCV=null,MCV=null,TCV=null;
+const rangeA=(L,t,f=0.2)=>{let a=0,v=null;for(const r of L||[]){if(t>=r[0]-f&&t<=r[1]+f){const x=cl((t-r[0]+f)/f)*cl((r[1]+f-t)/f);if(x>a){a=x;v=r}}}return[a,v]};
+function meDraw(c,me,w,h){if(OPT.sbs&&me.videoWidth)c.drawImage(me,0,0,me.videoWidth/2,me.videoHeight,0,0,w,h);else c.drawImage(me,0,0,w,h)}
+async function personLayer(t,me){const mw=540,mh=960;let mk=null;
+  if(OPT.sbs&&me&&me.videoWidth)mk=me;else if(FR.mask){const fps=FR.mask.fps||30;mk=await img(U(`mk/${pad4(Math.min(FR.mask.n,Math.max(1,Math.round(meSrc(t)*fps)+1)))}.jpg`))}
+  if(!mk||!me)return false;if(!PCV){PCV=document.createElement("canvas");PCV.width=mw;PCV.height=mh;MCV=document.createElement("canvas");MCV.width=mw;MCV.height=mh;TCV=document.createElement("canvas");TCV.width=mw;TCV.height=mh}
+  const m=MCV.getContext("2d",{willReadFrequently:true});m.globalCompositeOperation="copy";if(mk===me)m.drawImage(me,me.videoWidth/2,0,me.videoWidth/2,me.videoHeight,0,0,mw,mh);else m.drawImage(mk,0,0,mw,mh);
+  const id=m.getImageData(0,0,mw,mh),a=id.data;for(let i=0;i<a.length;i+=4){a[i+3]=a[i];a[i]=a[i+1]=a[i+2]=255}m.putImageData(id,0,0);
+  const q=PCV.getContext("2d");q.globalCompositeOperation="copy";meDraw(q,me,mw,mh);q.globalCompositeOperation="destination-in";q.drawImage(MCV,0,0);q.globalCompositeOperation="source-over";return true}
 async function frame(t){const k=splitK(t);if(k>0)await drawPanel(t);
   g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle="#000";g.fillRect(0,0,W,H);
   const me=OPT.meImage?await OPT.meImage(t):await img(U(`mf/${pad4(meIdx(t))}.jpg`));const dy=(730-SHIFT)*k,z=zoomAt(t);
-  if(me){g.save();g.translate(540,FY+dy);g.scale(z,z);g.translate(-540,-FY);g.drawImage(me,0,0,W,H);g.restore()}
+  const meT=()=>{g.translate(540,FY+dy);g.scale(z,z);g.translate(-540,-FY)};
+  if(me){g.save();meT();meDraw(g,me,W,H);g.restore()}
+  const[ca,cv]=rangeA(TL.cutout,t),[ga,gv]=rangeA(TL.glow,t),behind=(TL.cards||[]).some(c=>c.behind&&t>=c.t[0]-0.05&&t<=c.t[1]+0.3);
+  PERSON=false;if(me&&(ca>0||ga>0||behind))PERSON=await personLayer(t,me);
+  if(PERSON){if(ca>0){g.save();g.globalAlpha=ca;const bg=cv[2]||"#F3EEE3";g.fillStyle=bg==="paper"?"#F3EEE3":bg;g.fillRect(0,0,W,H);
+      if(bg==="paper"){const gr=g.createRadialGradient(540,800,200,540,900,1300);gr.addColorStop(0,"rgba(255,255,255,0.5)");gr.addColorStop(1,"rgba(120,100,70,0.18)");g.fillStyle=gr;g.fillRect(0,0,W,H)}g.restore()}
+    cards(t,k,"behind");
+    if(ga>0){const tq=TCV.getContext("2d");tq.globalCompositeOperation="copy";tq.drawImage(PCV,0,0);tq.globalCompositeOperation="source-in";tq.fillStyle=gv[2]||B.colors.accent;tq.fillRect(0,0,540,960);tq.globalCompositeOperation="source-over";
+      g.save();meT();g.globalAlpha=ga*0.9;g.filter="blur(22px)";g.drawImage(TCV,-12,-12,W+24,H+24);g.filter="blur(6px)";g.drawImage(TCV,0,0,W,H);g.filter="none";g.restore()}
+    g.save();meT();g.drawImage(PCV,0,0,W,H);g.restore()}
   if(k>0){const ph=PH*k;g.drawImage(PC,0,ph-PH);const gr=g.createLinearGradient(0,ph,0,ph+40);gr.addColorStop(0,"rgba(0,0,0,0.45)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.fillRect(0,ph,W,40)}
-  fullImages(t);cards(t,k);hook(t,k);subtitles(t,k)};
+  fullImages(t);cards(t,k,"front");hook(t,k);subtitles(t,k)};
 
 async function init(cfg){TL=cfg.tl;B=merge(DEF,cfg.brand||{});const LY=TL.layout||{};if(LY.cards_top!=null)B.cards.top=LY.cards_top;if(LY.caption_y!=null)B.captions.y=LY.caption_y;FR=cfg.frames||{me:{n:1,fps:30},rec:{}};DIR=cfg.dir;
   OFF=B.safe_top;PH=920+OFF;CX=40;CY=140+OFF;CW=1000;CH=740;SHIFT=B.split.shift;FY=B.face_y;

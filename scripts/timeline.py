@@ -149,7 +149,9 @@ tl = {"pieces": P, "dur": DUR, "end": round(DUR + 0.6, 2), "src_max": PL.get("sr
       "split": [rng(a, b, 1.0) for a, b in PL.get("split", [])], "shots": shots,
       "taps": [[o(t), *r] for t, *r in PL.get("taps", [])],
       "hl": [[*rng(a, b, 0.4), *r] for a, b, *r in PL.get("hl", [])],
-      "steps": [[o(t), *r] for t, *r in PL.get("steps", [])]}
+      "steps": [[o(t), *r] for t, *r in PL.get("steps", [])],
+      "cutout": [[*rng(a, b, 0.3), *r] for a, b, *r in PL.get("cutout", [])],
+      "glow": [[*rng(a, b, 0.3), *r] for a, b, *r in PL.get("glow", [])]}
 if PL.get("layout"):
     tl["layout"] = PL["layout"]
 save_json(d / "tl.json", tl)

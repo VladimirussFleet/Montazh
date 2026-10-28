@@ -40,6 +40,8 @@ if me:
     if m.get("file") != me[0] or m.get("sig") != sig(me[0]) or not (d / "mf" / "0001.jpg").exists():
         n = extract(me[0], d / "mf", "fps=30,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920")
         info["me"] = {"file": me[0], "n": n, "fps": 30, "sig": sig(me[0])}
+        if info.pop("mask", None):
+            print("исходник поменялся: маски устарели, запусти cutout.py заново")
     print("me:", info["me"]["n"], "кадров")
 
 for f in sorted(glob.glob(str(d / "src" / "rec*.*"))):

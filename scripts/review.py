@@ -178,9 +178,17 @@ if cmd == "export":
     tmp = tempfile.mkdtemp()
     chain = ("highpass=f=70,acompressor=threshold=-26dB:ratio=2.5:attack=10:release=150:knee=6:makeup=1,volume=9dB,"
              "acompressor=threshold=-7dB:ratio=8:attack=0.5:release=50:knee=3:makeup=1,alimiter=limit=0.89:level=disabled")
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", "scale=540:960:force_original_aspect_ratio=increase,crop=540:960",
-                    "-af", chain, "-c:v", "libx264", "-preset", "veryfast", "-b:v", "900k", "-maxrate", "1200k", "-bufsize", "2M",
-                    "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-ac", "1", "-movflags", "+faststart", str(R_DIR / "proxy.mp4")], check=True)
+    FRM = load_json(d / "frames.json", {})
+    sbs = bool(FRM.get("mask")) and (d / "mk" / "0001.jpg").exists()
+    if sbs:   # person masks from cutout.py ride along in the right half, so the page can put text behind the head
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-framerate", str(FRM["mask"].get("fps", 30)), "-i", str(d / "mk" / "%04d.jpg"),
+                        "-filter_complex", "[0:v]fps=30,scale=540:960:force_original_aspect_ratio=increase,crop=540:960[a];[1:v]scale=540:960,format=yuv420p[b];[a][b]hstack=2[v]",
+                        "-map", "[v]", "-map", "0:a", "-af", chain, "-c:v", "libx264", "-preset", "veryfast", "-b:v", "1500k", "-maxrate", "2000k", "-bufsize", "3M",
+                        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-ac", "1", "-shortest", "-movflags", "+faststart", str(R_DIR / "proxy.mp4")], check=True)
+    else:
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", "scale=540:960:force_original_aspect_ratio=increase,crop=540:960",
+                        "-af", chain, "-c:v", "libx264", "-preset", "veryfast", "-b:v", "900k", "-maxrate", "1200k", "-bufsize", "2M",
+                        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-ac", "1", "-movflags", "+faststart", str(R_DIR / "proxy.mp4")], check=True)
     from PIL import Image
     first = sorted((d / "mf").glob("*.jpg"))
     if first:
@@ -218,7 +226,7 @@ if cmd == "export":
     reel = {"id": d.name, "title": PL.get("title") or d.name, "src": "asset:proxy.mp4", "poster": "asset:poster.jpg" if (R_DIR / "poster.jpg").exists() else "", "srcDur": round(src_dur, 2), "speed": speed,
             "maxPause": pace["max_pause"], "keepPause": pace["keep_pause"], "words": W, "lines": lines, "cut": cut,
             "acc": PL.get("accent", []), "autoAcc": auto, "fix": plan_fix, "cards": board,
-            "plan": LP, "sub": sub, "recs": recs, "brand": B}
+            "plan": LP, "sub": sub, "recs": recs, "brand": B, "sbs": sbs}
     save_json(R_DIR / "reel.json", reel)
     files = ["proxy.mp4"] + (["poster.jpg"] if (R_DIR / "poster.jpg").exists() else []) + [f"thumb_{g['id']}.jpg" for g in board if g.get("thumb")] + live_files
     print(f"{len(W)} слов, {len(lines)} строк, предложено вырезать {len(cut)} слов, графики: {len(board)}")
@@ -269,6 +277,10 @@ elif cmd == "import":
     items = {x["id"]: x for x in PL.get("cards", []) + PL.get("shots", []) if x.get("id")}
     for a in Rv.get("adds") or []:      # graphics the person added on the page: a first version, Claude finishes it
         a = dict(a)
+        if a.get("type") in ("_cutout", "_glow"):   # background swap / glow: a range, not a card
+            PL.setdefault("cutout" if a["type"] == "_cutout" else "glow", []).append([a["src"][0], a["src"][1], a.get("value")])
+            todo.append(f"ДОБАВЛЕНО {'убрать фон' if a['type'] == '_cutout' else 'свечение'} {a['src'][0]:.2f}–{a['src'][1]:.2f} с исходника: проверь границы")
+            continue
         PL.setdefault("cards", []).append(a)
         items[a["id"]] = a
         names[a["id"]] = {"what": PART_NAMES.get(a.get("type"), a.get("type")), "kind": a.get("type")}

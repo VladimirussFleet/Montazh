@@ -211,6 +211,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
 .addbox .vars{flex-wrap:wrap;overflow:visible}
 .mine{font-family:var(--f-mono);font-size:11px;color:var(--accent);margin-left:6px}
 .screen.is-live video{opacity:0}
+.screen.sbs video{object-position:0 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -333,7 +334,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   let db = null, R = null, D = null, buildDoc = null, tool = "cut", fixing = null, canWrite = true, lastSaved = "";
   const KIND = { hook: "Хук", text: "Карточка с текстом", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий со словом", follow: "Кнопка подписки", sticker: "Стикер", split: "Сплит", shot: "Кадр в сплите", scene: "Моушн-панель в сплите",
     chat: "Чат", search: "Поиск", checklist: "Чек-лист", bars: "Полоски-цели", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Перекидные цифры", polaroids: "Полароиды", phone: "Телефон",
-    note: "Заметка от руки", beforeafter: "До / после", quote: "Цитата", word: "Слово крупно", hub: "Схема-связи", form: "Форма", site: "Сайт и бренд" };
+    note: "Заметка от руки", beforeafter: "До / после", quote: "Цитата", word: "Слово крупно", hub: "Схема-связи", form: "Форма", site: "Сайт и бренд", _cutout: "Фон убран", _glow: "Свечение" };
   const VAR_LABEL = { text: "Карточка", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий", follow: "Подписка", sticker: "Стикер", chat: "Чат", search: "Поиск", checklist: "Чек-лист",
     bars: "Полоски", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Цифры", polaroids: "Полароиды", phone: "Телефон", note: "Заметка", beforeafter: "До / после", quote: "Цитата",
     word: "Слово крупно", hub: "Схема", form: "Форма", site: "Сайт" };
@@ -383,7 +384,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   function render() {
     if (!R) return;
     $("blank").hidden = true; $("desk").hidden = false; $("bar").hidden = mode !== "reel";
-    $("title").textContent = R.title || "Без названия";
+    $("title").textContent = R.title || "Без названия"; screenEl.classList.toggle("sbs", !!R.sbs);
     const cut = cutSet(), cutLines = R.lines.filter(([a, b]) => { for (let i = a; i <= b; i++) if (!cut.has(i)) return false; return true; }).length;
     $("stats").innerHTML = "";
     const chip = (html, cls) => { const s = document.createElement("span"); s.className = "chip" + (cls ? " " + cls : ""); s.innerHTML = html; $("stats").append(s); };
@@ -438,7 +439,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   function planItem(id) { const P = R.plan || {}; return (P.cards || []).find(c => c.id === id) || (P.shots || []).find(x => x.id === id) || (D.adds || []).find(a => a.id === id) || null; }
   function moments() {
     const out = R.cards.map(c => ({ ...c }));
-    (D.adds || []).forEach(a => out.push({ id: a.id, kind: a.type, what: "Добавлено тобой: " + (VAR_LABEL[a.type] || a.type), src: a.src, mine: true }));
+    (D.adds || []).forEach(a => out.push({ id: a.id, kind: a.type, what: "Добавлено тобой: " + (a.label || VAR_LABEL[a.type] || a.type), src: a.src, mine: true }));
     return out.sort((a, b) => (a.id === "hook" ? -1 : b.id === "hook" ? 1 : a.src[0] - b.src[0]));
   }
   function renderCards() {
@@ -504,6 +505,8 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   // ---------- adding a graphic at the player's position: a first version from the words said there; Claude polishes it at the build ----------
   let addOpen = false;
   const ADD_TYPES = ["text", "word", "note", "checklist", "flip", "quote", "chat", "bars", "calendar", "beforeafter", "profile"];
+  const ADD_CUT = ["behind", "_cutout", "_glow"];   // need person masks (scripts/cutout.py)
+  const ADD_LABEL = { behind: "Текст за головой", _cutout: "Фон убрать", _glow: "Свечение" };
   function phraseAt(t, sec) { const cut = cutSet(); return R.words.filter((w, i) => !cut.has(i) && w[1] >= t - 0.05 && w[1] < t + sec).map((w, i) => D.fix[R.words.indexOf(w)] ?? w[0]).join(" "); }
   function draftOf(type, t) {
     const ph = phraseAt(t, 2.2) || "твой текст", words = ph.split(" "), big = words.slice().sort((a, b) => b.length - a.length)[0] || ph, cap = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -521,6 +524,9 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       case "calendar": return { title: "МЕСЯЦ", days: 31, start: 3, marks: [[5, ""], [12, ""], [19, ""]] };
       case "beforeafter": return { before: { title: "Было" }, after: { title: cap(words.slice(0, 3).join(" ")) } };
       case "profile": return { handle: bn ? "@" + bn.toLowerCase() : "@you", name: "", followers: [100, 1000] };
+      case "behind": return { type: "word", text: big.toUpperCase(), fx: "slam", size: 220, y: (B0().face_y || 740) - 250, behind: true, label: "Текст за головой" };
+      case "_cutout": return { type: "_cutout", value: "paper", label: "Фон убрать" };
+      case "_glow": return { type: "_glow", value: (B0().colors || {}).accent || "#FFCF4D", label: "Свечение" };
     }
     return { title: ph };
   }
@@ -530,11 +536,11 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
     const t = vid.currentTime, tc = toCut(t);
     const h = document.createElement("p"); h.className = "hint"; h.style.margin = "0"; h.textContent = `Куда: ${fmt(tc)} в ролике (там, где стоит плеер). Первый вариант соберётся из твоих слов в этом месте, Claude доведёт его при сборке.`;
     const vars = document.createElement("div"); vars.className = "vars";
-    ADD_TYPES.forEach(type => {
+    ADD_TYPES.concat(R.sbs ? ADD_CUT : []).forEach(type => {
       const v = document.createElement("button"); v.className = "var"; const cv = document.createElement("canvas"); cv.width = 216; cv.height = 384;
       const tmp = { id: "_add_" + type, type, src: [t, t + 2.6], ...draftOf(type, t) };
       if ((R.plan.split || []).some(([a, b]) => t >= a && t <= b)) { tmp.in_split = true; tmp.y = 1720; }
-      v.append(cv); const sp = document.createElement("span"); sp.textContent = VAR_LABEL[type]; v.append(sp);
+      v.append(cv); const sp = document.createElement("span"); sp.textContent = ADD_LABEL[type] || VAR_LABEL[type]; v.append(sp);
       thumbJob(cv, { id: tmp.id, src: tmp.src, kind: type }, 0, tmp);
       v.onclick = () => { const id = "a" + (1 + Math.max(0, ...(D.adds || []).map(a => +a.id.slice(1) || 0))); const it = { ...tmp, id };
         if ((R.plan.split || []).some(([a, b]) => t >= a && t <= b)) { it.in_split = true; it.y = 1720; }
@@ -559,7 +565,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       if (!thumbVid) { thumbVid = document.createElement("video"); thumbVid.muted = true; thumbVid.playsInline = true; thumbVid.preload = "auto"; thumbVid.src = R.src;
         thumbVid.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none"; thumbVid.setAttribute("aria-hidden", "true"); document.body.append(thumbVid);
         await new Promise(r => { if (thumbVid.readyState >= 1) r(); else { thumbVid.addEventListener("loadedmetadata", r, { once: true }); setTimeout(r, 4000); } }); }
-      if (!thumbEng) thumbEng = ReelEngine(thumbCv, { fonts: "css", asset: p => p, meImage: async () => (thumbVid.readyState >= 2 ? thumbVid : null), recImage: async () => null });
+      if (!thumbEng) thumbEng = ReelEngine(thumbCv, { fonts: "css", sbs: !!R.sbs, asset: p => p, meImage: async () => (thumbVid.readyState >= 2 ? thumbVid : null), recImage: async () => null });
       while (thumbQ.length) {
         const j = thumbQ.shift(); if (!j.cv.isConnected) continue;
         const a = j.m.src[0], b = j.m.src[1], ts = Math.min(b - 0.05, a + Math.min(1.6, (b - a) * 0.7));
@@ -725,7 +731,8 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
     const pickOf = id => over.pick && id in over.pick ? over.pick[id] : ((D.board[id] || {}).pick || 0);
     const variant = it => { const k = pickOf(it.id); if (!k || !it.alts || !it.alts[k - 1]) return it; const b = {}; for (const key of ["id", "src", "keep", "x", "y", "in_split"]) if (key in it) b[key] = it[key]; return Object.assign(b, it.alts[k - 1]); };
     const moved = c => { const y = (D.board[c.id] || {}).y; if (y != null) c.y = y; return c; };
-    const all = (PL.cards || []).concat(D.adds || []).concat(over.extra ? [over.extra] : []);
+    const fxAdds = (D.adds || []).concat(over.extra ? [over.extra] : []).filter(a => a.type === "_cutout" || a.type === "_glow");
+    const all = (PL.cards || []).concat(D.adds || []).concat(over.extra ? [over.extra] : []).filter(a => a.type !== "_cutout" && a.type !== "_glow");
     const cards = all.filter(c => !off(c.id) && (c.keep || c.id === over.force || kept(c.src[0], c.src[1]) > 0.05)).map(c0 => { const c = moved(times(JSON.parse(JSON.stringify(variant(c0)))));
       c.t = rng(c.src[0], c.src[1], 0.6); delete c.src; delete c.alts; return c; });
     const shots = (PL.shots || []).filter(s => !offSplit(s.rec ? s.m[0][0] : s.src[0]) && !(s.id && off(s.id) && s.scene)).map(s0 => { let s = JSON.parse(JSON.stringify(s0));
@@ -738,6 +745,8 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       taps: (PL.taps || []).filter(x => !offSplit(x[0])).map(([t, ...r]) => [o(t), ...r]),
       hl: (PL.hl || []).filter(x => !offSplit(x[0])).map(([a, b, ...r]) => [...rng(a, b, 0.4), ...r]),
       steps: (PL.steps || []).filter(x => !offSplit(x[0])).map(([t, ...r]) => [o(t), ...r]),
+      cutout: (PL.cutout || []).concat(fxAdds.filter(a => a.type === "_cutout").map(a => [a.src[0], a.src[1], a.value])).map(([a, b, ...r]) => [...rng(a, b, 0.3), ...r]),
+      glow: (PL.glow || []).concat(fxAdds.filter(a => a.type === "_glow").map(a => [a.src[0], a.src[1], a.value])).map(([a, b, ...r]) => [...rng(a, b, 0.3), ...r]),
       layout: PL.layout || null };
   }
   // screen recordings: light copies that play along with the draft
@@ -768,7 +777,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
     : "Черновик играет с твоими вырезами и темпом, пока без графики. Нажми на графику во вкладке «Графика», и увидишь настоящий кадр с ней."; }
   async function liveInit() {
     if (!window.ReelEngine || !R || !R.plan || !D) { setLive(false); return; }
-    if (!live) live = ReelEngine(liveCv, { fonts: "css", asset: p => p, meImage: async () => (vid.readyState >= 2 ? vid : null), recImage: async (n, r) => recFrame(n, r) });
+    if (!live) live = ReelEngine(liveCv, { fonts: "css", sbs: !!R.sbs, asset: p => p, meImage: async () => (vid.readyState >= 2 ? vid : null), recImage: async (n, r) => recFrame(n, r) });
     liveOk = false;
     try {
       liveTL = buildTL();
