@@ -130,6 +130,13 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
 .opt[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .opt .play{flex:none;border:0;background:var(--sunk);border-radius:50%;width:26px;height:26px;font-size:11px;display:inline-grid;place-items:center;padding:0}
 .looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.look .ds{display:block;font-size:11.5px;color:var(--muted);line-height:1.25;margin-top:2px}
+.moodgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin:8px 0}
+.moodgrid figure{position:relative;margin:0}.moodgrid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;background:var(--sunk)}
+.moodgrid button{position:absolute;top:3px;right:3px;border:0;border-radius:999px;width:22px;height:22px;background:rgba(0,0,0,.6);color:#fff;font-size:13px;line-height:1}
+.moodgrid .used{position:absolute;left:3px;bottom:3px;font-size:10px;background:rgba(0,0,0,.6);color:#fff;border-radius:6px;padding:1px 5px}
+.igzone{position:absolute;inset:0;pointer-events:none;z-index:3}
+.screen.drag{cursor:ns-resize}
 .look{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:10px;text-align:left;display:flex;flex-direction:column;gap:6px}
 .look[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .look .sw{border-radius:9px;background:#2a2622;height:62px;display:grid;place-items:center;font-size:19px;line-height:1;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5);overflow:hidden;padding:0 6px;text-align:center}
@@ -242,13 +249,17 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
 
   <main class="desk" id="desk" hidden>
     <section class="monitor" aria-label="Черновик">
-      <div class="screen" id="screen"><video id="vid" playsinline preload="auto"></video><canvas id="live" width="1080" height="1920" hidden aria-label="Живой черновик"></canvas><img id="gshot" class="gshot" alt="" hidden><div class="gtag" id="gtag" hidden></div><div class="tc" id="tc">0:00.0 / 0:00.0</div></div>
+      <div class="screen" id="screen"><video id="vid" playsinline preload="auto"></video><canvas id="live" width="1080" height="1920" hidden aria-label="Живой черновик"></canvas><img id="gshot" class="gshot" alt="" hidden><div class="gtag" id="gtag" hidden></div><div class="tc" id="tc">0:00.0 / 0:00.0</div><svg class="igzone" id="igzone" viewBox="0 0 1080 1920" preserveAspectRatio="none" style="display:none" aria-hidden="true">
+        <rect x="0" y="0" width="1080" height="150" fill="rgba(0,0,0,.35)"/><text x="40" y="100" font-size="44" font-weight="700" fill="#fff" font-family="sans-serif">Reels</text>
+        <g fill="rgba(255,255,255,.85)"><circle cx="1005" cy="1170" r="34"/><circle cx="1005" cy="1300" r="34"/><circle cx="1005" cy="1430" r="34"/><circle cx="1005" cy="1560" r="34"/><rect x="975" y="1650" width="60" height="60" rx="12"/></g>
+        <rect x="0" y="1660" width="900" height="260" fill="rgba(0,0,0,.35)"/><circle cx="70" cy="1730" r="30" fill="rgba(255,255,255,.85)"/><rect x="120" y="1712" width="300" height="34" rx="8" fill="rgba(255,255,255,.85)"/><rect x="40" y="1790" width="760" height="28" rx="8" fill="rgba(255,255,255,.6)"/></svg></div>
       <div class="transport">
         <button class="btn" id="back" aria-label="Назад на 5 секунд">−5</button>
         <button class="btn primary play" id="play">▶ Смотреть черновик</button>
         <button class="btn" id="fwd" aria-label="Вперёд на 5 секунд">+5</button>
       </div>
       <input type="range" id="scrub" min="0" max="100" step="0.1" value="0" aria-label="Позиция в черновике">
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="tgl" id="igz" aria-pressed="false">Кнопки Instagram</button><span class="hint" id="draghint" hidden>Потяни графику на плеере вверх или вниз</span></div>
       <p class="hint" id="mon-hint">Черновик играет с твоими вырезами и темпом, пока без графики. Нажми на графику во вкладке «Графика», и увидишь настоящий кадр с ней.</p>
     </section>
 
@@ -300,7 +311,11 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
         <p class="hint" id="mhint">Это твой кадр, твой хук и твои слова. Готовый ролик будет выглядеть так же.</p>
       </section>
       <div class="knobs-col"><div class="ask" id="askStyle" hidden></div><section class="knobs" id="knobs" aria-label="Настройки стиля"></section>
-        <section class="panel memo" id="memo" hidden><h3>Твои правила</h3><ul id="memoList"></ul><p class="hint">Claude соблюдает их в каждом ролике. Новое правило просто скажи ему в чате: «субтитры мельче», «без красного».</p></section></div>
+        <section class="panel memo" id="memo" hidden><h3>Твои правила</h3><ul id="memoList"></ul><p class="hint">Claude соблюдает их в каждом ролике. Новое правило просто скажи ему в чате: «субтитры мельче», «без красного».</p></section>
+        <section class="panel memo" id="mood"><h3>Мои картинки</h3><p class="hint">Фото, скриншоты, картинки с Pinterest. Claude поставит их полароидами, в телефон или коллажем там, где они к месту, и отметит, какие уже были в роликах.</p>
+          <div class="moodgrid" id="moodGrid"></div>
+          <label class="btn" id="moodAdd" hidden>+ Загрузить картинки<input type="file" id="moodFile" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></label>
+          <p class="hint" id="moodMsg"></p></section></div>
     </main>
   </div>
   <footer class="foot">Инструмент «Монтаж» от <a href="https://aiigonin.ru" target="_blank" rel="noopener">AI Igonin</a> (@vladimiruss). Бесплатно, лицензия MIT. Твой стиль и правки хранятся на этой странице в твоём аккаунте Claude.</footer>
@@ -527,6 +542,8 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       case "behind": return { type: "word", text: big.toUpperCase(), fx: "slam", size: 220, y: (B0().face_y || 740) - 250, behind: true, label: "Текст за головой" };
       case "_cutout": return { type: "_cutout", value: "paper", label: "Фон убрать" };
       case "_glow": return { type: "_glow", value: (B0().colors || {}).accent || "#FFCF4D", label: "Свечение" };
+      case "polaroids": { const fresh = MOOD.filter(m => !usedIds().has(m.id)), pick = (fresh.length >= 2 ? fresh : MOOD).slice(0, 3); return { files: pick.map(m => "/_blob/" + m.id), captions: [] }; }
+      case "phone": { const m = MOOD.find(z => !usedIds().has(z.id)) || MOOD[0]; return { file: "/_blob/" + m.id }; }
     }
     return { title: ph };
   }
@@ -536,7 +553,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
     const t = vid.currentTime, tc = toCut(t);
     const h = document.createElement("p"); h.className = "hint"; h.style.margin = "0"; h.textContent = `Куда: ${fmt(tc)} в ролике (там, где стоит плеер). Первый вариант соберётся из твоих слов в этом месте, Claude доведёт его при сборке.`;
     const vars = document.createElement("div"); vars.className = "vars";
-    ADD_TYPES.concat(R.sbs ? ADD_CUT : []).forEach(type => {
+    ADD_TYPES.concat(MOOD.length ? ["polaroids", "phone"] : []).concat(R.sbs ? ADD_CUT : []).forEach(type => {
       const v = document.createElement("button"); v.className = "var"; const cv = document.createElement("canvas"); cv.width = 216; cv.height = 384;
       const tmp = { id: "_add_" + type, type, src: [t, t + 2.6], ...draftOf(type, t) };
       if ((R.plan.split || []).some(([a, b]) => t >= a && t <= b)) { tmp.in_split = true; tmp.y = 1720; }
@@ -618,11 +635,11 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
     if (liveOk || st === "d" || !c.thumb) { img.hidden = true; } else { img.src = c.thumb; img.hidden = false; }
     tag.className = "gtag" + (st === "d" ? " d" : "");
     tag.textContent = st === "d" ? "Убрано: в этом месте графики не будет" : st === "c" ? "Сейчас так. Поменяю по твоему комментарию" : (KIND[c.kind] || "Графика") + ": так будет в ролике";
-    tag.hidden = false; tick();
+    tag.hidden = false; $("draghint").hidden = !draggable(c.id); tick();
     document.querySelectorAll(".mom.on").forEach(x => x.classList.remove("on"));
     const el = [...$("cards").querySelectorAll(".mom")].find(x => x.dataset.id === c.id); if (el) el.classList.add("on");
   }
-  function hideGfx() { gfxOn = null; $("gshot").hidden = true; $("gtag").hidden = true; document.querySelectorAll(".mom.on").forEach(x => x.classList.remove("on")); }
+  function hideGfx() { gfxOn = null; $("gshot").hidden = true; $("gtag").hidden = true; $("draghint").hidden = true; document.querySelectorAll(".mom.on").forEach(x => x.classList.remove("on")); }
   function seekCut(c) { if (!R) return; hideGfx(); vid.currentTime = toSrc(Math.max(0, Math.min(CUTDUR, c))); tick(); }
   function tick() {
     if (!R) return;
@@ -813,6 +830,39 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   $("ready").onclick = () => { if (!canWrite || !D) return; D.status = "ready"; render(); clearTimeout(saveTimer); flush(); };
 
 
+  // ---------- Instagram buttons over the player ----------
+  $("igz").onclick = () => { const on = $("igz").getAttribute("aria-pressed") !== "true"; $("igz").setAttribute("aria-pressed", String(on)); $("igzone").style.display = on ? "block" : "none"; };
+  // ---------- drag the picked graphic up or down right on the player ----------
+  const draggable = id => { const it = id && planItem(id); return !!(it && !it.scene && it.type && it.type !== "_cutout" && it.type !== "_glow" && !(it.type === "image" && it.size === "full")); };
+  let dragId = null, dragT = 0;
+  screenEl.addEventListener("pointerdown", e => { if (!canWrite || !liveOk || !draggable(gfxOn)) return; dragId = gfxOn; screenEl.setPointerCapture(e.pointerId); screenEl.classList.add("drag"); e.preventDefault(); });
+  screenEl.addEventListener("pointermove", e => { if (!dragId) return; const r = screenEl.getBoundingClientRect(), y = Math.round(Math.max(220, Math.min(1800, (e.clientY - r.top) / r.height * 1920)));
+    D.board[dragId] = { ...(D.board[dragId] || {}), y }; const now = performance.now(); if (now - dragT > 120) { dragT = now; liveSoon(); } });
+  const dragEnd = () => { if (!dragId) return; dragId = null; screenEl.classList.remove("drag"); change(() => {}); };
+  screenEl.addEventListener("pointerup", dragEnd); screenEl.addEventListener("pointercancel", dragEnd);
+  // ---------- moodboard: the person's own pictures (uploaded to the page, list in db moodboard/items) ----------
+  let MOOD = [], assetsNs = null;
+  const usedIds = () => { const txt = JSON.stringify((R && R.plan) || {}) + JSON.stringify((D && D.adds) || []); return new Set(MOOD.map(m => m.id).filter(id => txt.includes(id))); };
+  function renderMood() {
+    const grid = $("moodGrid"); grid.innerHTML = ""; const used = usedIds();
+    MOOD.forEach(m => { const f = document.createElement("figure"); const im = document.createElement("img"); im.src = "/_blob/" + m.id; im.alt = m.name || ""; im.loading = "lazy"; f.append(im);
+      if (used.has(m.id) || m.used) { const u = document.createElement("span"); u.className = "used"; u.textContent = "уже было"; f.append(u); }
+      if (assetsNs && canWrite) { const x = document.createElement("button"); x.textContent = "×"; x.setAttribute("aria-label", "Убрать картинку");
+        x.onclick = async () => { if (!confirm("Убрать картинку из мудборда?")) return; try { await assetsNs.delete(m.id); } catch (e) {} MOOD = MOOD.filter(z => z.id !== m.id); await db.doc("moodboard/items").set({ items: MOOD }); renderMood(); }; f.append(x); }
+      grid.append(f); });
+    if (!MOOD.length) { const p = document.createElement("p"); p.className = "hint"; p.style.margin = "0"; p.textContent = "Пока пусто."; grid.append(p); }
+  }
+  $("moodFile").onchange = async e => {
+    const files = [...e.target.files]; e.target.value = ""; if (!assetsNs || !files.length) return; let ok = 0;
+    for (const f of files) {
+      $("moodMsg").textContent = `загружаю ${ok + 1} из ${files.length}…`;
+      try { const r = await assetsNs.upload(f); MOOD.push({ id: r.id, name: f.name, at: Date.now() }); ok++; }
+      catch (err) { $("moodMsg").textContent = err && err.code === "too_large" ? `${f.name}: больше 20 МБ` : err && err.code === "unsupported_type" ? `${f.name}: нужен PNG, JPG, WEBP или GIF` : err && err.code === "quota_or_state" ? "Место для файлов на странице закончилось" : `${f.name}: не загрузилось`; }
+    }
+    if (ok) { try { await db.doc("moodboard/items").set({ items: MOOD }); $("moodMsg").textContent = `Добавлено: ${ok}. Claude возьмёт их в следующих роликах.`; } catch (e) { $("moodMsg").textContent = "Картинки загрузились, но список не сохранился. Обнови страницу."; } }
+    renderMood();
+  };
+
   // =====================================================================
   // ---------- Стиль: примерочная ----------
   // =====================================================================
@@ -840,6 +890,11 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   const lum = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
   // looks: complete styles to start from
   const LOOKS = [
+    { id: "tips", genre: true, name: "Советы и цифры", desc: "чек-листы, перекидные цифры, полоски", head: "montserrat", accent: "#FFCF4D", ui: "#D9B25B", cap: { mode: "phrase", case: "as_is", style: "shadow", size: 96 }, hook: "white", cards: "light", pacing: "tight", sfx: "subtle", gfx: ["checklist", "flip", "bars", "word"] },
+    { id: "story", genre: true, name: "Личная история", desc: "заметки от руки, полароиды, цитаты", head: "shantell-sans", capFont: "nunito", accent: "#FF7AB6", ui: "#FF7AB6", cap: { mode: "phrase", case: "lower", style: "shadow", size: 96 }, hook: "text", cards: "light", pacing: "natural", sfx: "subtle", gfx: ["note", "polaroids", "quote", "calendar"] },
+    { id: "tutorial", genre: true, name: "Обучение и нейросети", desc: "чат, поиск, моушн-панели по шагам", head: "golos-text", accent: "#4C8DFF", ui: "#4C8DFF", cap: { mode: "phrase", case: "as_is", style: "box", size: 86 }, hook: "white", cards: "light", pacing: "tight", sfx: "subtle", gfx: ["chat", "search", "checklist", "hub"] },
+    { id: "scrapbook", genre: true, name: "Скрапбук", desc: "бумага, фото, текст за головой", head: "caveat", capFont: "nunito", accent: "#FF7A59", ui: "#FF7A59", cap: { mode: "phrase", case: "lower", style: "shadow", size: 100 }, hook: "text", cards: "light", pacing: "tight", sfx: "subtle", gfx: ["polaroids", "note", "calendar", "profile"] },
+    { id: "expert", genre: true, name: "Эксперт", desc: "цитаты, до/после, спокойный темп", head: "playfair-display", capFont: "inter", accent: "#E8C9A0", ui: "#E8C9A0", cap: { mode: "phrase", case: "as_is", style: "shadow", size: 90 }, hook: "text", cards: "dark", pacing: "natural", sfx: "subtle", gfx: ["quote", "beforeafter", "bars", "checklist"] },
     { id: "marker", name: "Жёлтый маркер", head: "montserrat", accent: "#FFCF4D", ui: "#D9B25B", cap: { mode: "phrase", case: "as_is", style: "shadow", size: 94 }, hook: "white", cards: "light", pacing: "tight", sfx: "subtle" },
     { id: "notebook", name: "Блокнот", head: "caveat", accent: "#FFCF4D", ui: "#FFCF4D", cap: { mode: "phrase", case: "lower", style: "shadow", size: 104 }, hook: "text", cards: "light", pacing: "tight", sfx: "subtle" },
     { id: "boutique", name: "Бутик", head: "yeseva-one", capFont: "cormorant-garamond", accent: "#E8C9A0", ui: "#E8C9A0", cap: { mode: "phrase", case: "as_is", style: "shadow", size: 100 }, hook: "text", cards: "dark", pacing: "natural", sfx: "subtle" },
@@ -869,7 +924,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       hook: { font: L.head, kind: L.hook === "accent" ? "color" : L.hook, color: L.accent, accent: L.accent },
       caps: { font: L.capFont || L.head, accent: L.accent, ...L.cap, y: 1530 },
       cards: { font: L.head, kind: L.cards, accent: L.accent, ui: L.ui },
-      pacing: L.pacing, sfx: L.sfx, music: false, musicDb: 18 };
+      pacing: L.pacing, sfx: L.sfx, music: false, musicDb: 18, gfx: (L.gfx || ["checklist", "word", "quote"]).slice() };
   }
   function fromBrand(b) {
     const L = fromLook(LOOKS[0]); if (!b || !b.fonts) return L;
@@ -880,7 +935,8 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       hook: { font: f.head || L.hook.font, kind, color: kind === "color" ? plate : up(col.accent || L.hook.color), accent: up(col.hook_accent || col.accent || L.hook.accent) },
       caps: { font: f.captions || f.head || L.caps.font, accent: up(col.accent || L.caps.accent), mode: cap.mode || "phrase", case: cap.case || "as_is", style: cap.style || "shadow", size: cap.size || 94, y: cap.y || 1530 },
       cards: { font: f.cards || f.head || L.cards.font, kind: up(col.card || "#FFFFFF") === "#FFFFFF" ? "light" : "dark", accent: up(col.card_accent || col.accent || L.cards.accent), ui: col.ui ? up(col.ui) : L.cards.ui },
-      pacing: b.pacing || "tight", sfx: b.sfx || "subtle", music: !!(b.music && b.music.enabled), musicDb: (b.music && b.music.below_db) || 18 };
+      pacing: b.pacing || "tight", sfx: b.sfx || "subtle", music: !!(b.music && b.music.enabled), musicDb: (b.music && b.music.below_db) || 18,
+      gfx: Array.isArray(b.gfx_prefer) && b.gfx_prefer.length ? b.gfx_prefer.slice() : L.gfx };
   }
   function brandOf(c) {
     const hk = hookColors(c.hook), cd = cardColors(c.cards.kind, c.cards.accent);
@@ -889,7 +945,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       colors: { accent: c.caps.accent, hook_accent: c.hook.accent, ui: c.cards.ui === "accent" ? c.cards.accent : c.cards.ui, caption: "#FFFFFF", plate: hk.plate, plate_text: hk.text, ...cd },
       captions: { mode: c.caps.mode, case: c.caps.case, style: c.caps.style, size: c.caps.size, y: c.caps.y },
       hook: { style: hk.style }, pacing: c.pacing, sfx: c.sfx, music: { enabled: c.music, below_db: c.musicDb },
-      cards: { top: (keep.cards && keep.cards.top) || 1100 }, face_y: keep.face_y || 740 };
+      cards: { top: (keep.cards && keep.cards.top) || 1100 }, face_y: keep.face_y || 740, gfx_prefer: (c.gfx || []).slice() };
   }
   const PACE = { natural: "Естественный", tight: "Плотный", fast: "Быстрый" }, SFXN = { none: "Без звуков", subtle: "Тихие", lots: "Побольше" };
   const colName = h => { const a = ACCENTS.find(x => x[0].toUpperCase() === String(h).toUpperCase()); return a ? a[1].toLowerCase() : h; };
@@ -908,8 +964,28 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       if (t > 7.6) break;
     }
     return { pieces: [], dur: 8, end: 8, hook: { lines: hook, t1: 2.2 }, subs, zoom: [], split: [], shots: [], taps: [], hl: [], steps: [],
-             cards: [{ type: "text", t: [3.3, 5.3], title: "*Пример* карточки", sub: "текст будет под твой ролик" },
-                     { type: "list", t: [5.5, 7.8], title: "*3 ШАГА*", items: ["Снял видео", "Отправил Claude", "Получил рилс"], at: [5.8, 6.15, 6.5], icon: "check" }] };
+             cards: (C.gfx && C.gfx.length ? C.gfx.slice(0, 2) : ["text", "list"]).map((ty, i) => ({ ...sampleOf(ty, i ? 5.5 : 3.3), t: i ? [5.5, 7.8] : [3.3, 5.3] })) };
+  }
+  // a sample of each graphic for the fitting room (Claude writes the real text for every reel)
+  function sampleOf(type, t0) {
+    const at = n => Array.from({ length: n }, (_, i) => t0 + 0.3 + i * 0.35);
+    switch (type) {
+      case "checklist": return { type, title: "*3 ШАГА*", items: ["Снял видео", "Отправил Claude", "Получил рилс"], at: at(3) };
+      case "flip": return { type, value: "05", from: "01", label: "роликов в неделю", at: [t0 + 0.2] };
+      case "bars": return { type, title: "Цели на месяц", items: [["Подписчики", 1200], ["Заявки", 80]], max: 1500, at: at(2) };
+      case "word": return { type, text: "СТРАННО", fx: "shake" };
+      case "note": return { type, text: "снял за 5 минут!" };
+      case "polaroids": return { type, files: (SM.frames || []).slice(0, 3), captions: ["утро", "день", "вечер"], at: at(3) };
+      case "quote": return { type, text: "Монтаж теперь — *минуты*", author: "" };
+      case "calendar": return { type, title: "ОКТЯБРЬ", days: 31, start: 3, marks: [[3, ""], [10, "рилс"], [17, ""]], at: at(3) };
+      case "chat": return { type, q: "Смонтируй рилс из видео", a: "Готово: паузы вырезаны, субтитры стоят", at: [t0 + 0.1, t0 + 1.1] };
+      case "search": return { type, q: "тренды AI-видео", status: "Ищу источники…", count: 24, rows: [["Отчёт", "с цифрами и ссылками"]], at: at(3) };
+      case "beforeafter": return { type, before: { title: "Было: 2 часа" }, after: { title: "Стало: 5 минут" }, at: [t0 + 0.8] };
+      case "profile": return { type, handle: "@" + ((SM.brand || {}).handle || "you"), name: "", followers: [100, 2000] };
+      case "hub": return { type, center: "Claude", nodes: [["Почта"], ["Календарь"], ["Таблицы"]], at: at(3), count: "1 500+ приложений" };
+      case "list": return { type, title: "*3 ШАГА*", items: ["Снял видео", "Отправил Claude", "Получил рилс"], at: at(3), icon: "check" };
+      default: return { type: "text", title: "*Пример* карточки", sub: "текст будет под твой ролик" };
+    }
   }
   const SCENES = [["all", "Всё подряд"], ["hook", "Хук"], ["subs", "Субтитры"], ["card", "Карточки"]];
   const SCENE_T = { hook: 1.2, subs: 2.6, card: 4.4 };
@@ -918,6 +994,22 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
     subs: "Субтитры с твоими словами. Цветом горят ключевые слова и названия сервисов.",
     card: "Карточки для примера. Что в них написано, Claude решает в каждом ролике под твои слова, здесь выбирается только вид." };
   const frameImgs = [];
+  // accent colours taken from the person's own frame (clothes, room): 4 strongest hues, lifted to read well on video
+  const palCache = {};
+  function framePalette(i) {
+    if (palCache[i]) return palCache[i]; const im = frameImgs[i]; if (!im || !im.naturalWidth) return [];
+    try {
+      const c = document.createElement("canvas"); c.width = 48; c.height = 85; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0, 48, 85);
+      const d = x.getImageData(0, 0, 48, 85).data, bins = Array.from({ length: 12 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
+      for (let k = 0; k < d.length; k += 4) { const r = d[k] / 255, g = d[k + 1] / 255, b = d[k + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, sat = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1));
+        if (sat < 0.22 || l < 0.12 || l > 0.9) continue; let h = mx === r ? ((g - b) / (mx - mn) + 6) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; const bi = bins[Math.floor(h * 2) % 12], w = sat;
+        bi.w += w; bi.r += r * w; bi.g += g * w; bi.b += b * w; }
+      const top = bins.filter(b => b.w > 3).sort((a, b) => b.w - a.w).slice(0, 4);
+      palCache[i] = top.map(b => { let [r, g, bb] = [b.r / b.w, b.g / b.w, b.b / b.w]; const mx = Math.max(r, g, bb), k = Math.min(1 / Math.max(mx, 0.01), 1.6); r = Math.min(1, r * k); g = Math.min(1, g * k); bb = Math.min(1, bb * k);
+        return "#" + [r, g, bb].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("").toUpperCase(); });
+      return palCache[i];
+    } catch (e) { return []; }
+  }
   async function engInit() {
     if (!window.ReelEngine) return;
     if (!eng) eng = ReelEngine($("mirror"), { fonts: "css", asset: p => p, meImage: async () => frameImgs[frameIdx] || null });
@@ -986,8 +1078,8 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
     PARTS.forEach(([v, t]) => { const b = el("button", "part"); b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(part === v)); b.textContent = t; b.onclick = () => setPart(v); pr.append(b); });
     K.append(pr);
     if (part === "look") {
-      const lk = el("div", "looks");
-      for (const L of LOOKS) {
+      const mk = list => { const lk = el("div", "looks");
+      for (const L of list) {
         const hf = fontOf(L.head), cf = fontOf(L.capFont || L.head);
         const b = el("button", "look"); b.setAttribute("aria-pressed", String(C.look === L.id));
         const sw = el("div", "sw");
@@ -995,11 +1087,14 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
         t1.style.cssText = `font-family:"${hf[1]}",sans-serif;font-weight:${hf[2]};font-size:${Math.round(19 * hf[3])}px`;
         const t2 = document.createElement("span"); t2.textContent = L.cap.case === "upper" ? "РАБОТАЕТ" : "работает"; t2.style.color = L.accent;
         t2.style.cssText += `font-family:"${cf[1]}",sans-serif;font-weight:${cf[2]};font-size:${Math.round(19 * cf[3])}px`;
-        sw.append(t1, t2); b.append(sw, el("span", "nm", L.name));
+        sw.append(t1, t2); b.append(sw, el("span", "nm", L.name)); if (L.desc) b.append(el("span", "ds", L.desc));
         b.onclick = () => { const y = C.caps.y; C = { ...fromLook(L), music: C.music, musicDb: C.musicDb, sfx: C.sfx }; C.caps.y = y; restyle(); };
         lk.append(b);
-      }
-      K.append(section("Готовые образы", lk, "Образ меняет всё сразу: шрифты, цвета, субтитры и темп. Потом подгони что-то одно во вкладках «Хук», «Субтитры» или «Карточки»: остальное не изменится."));
+      } return lk; };
+      K.append(section("Под жанр", mk(LOOKS.filter(L => L.genre)), "Шрифты, цвета, темп и графика, которая подходит этому жанру. Claude будет предлагать её первой."));
+      const pal = framePalette(frameIdx);
+      if (pal.length) K.append(section("Цвета из твоего кадра", swatches(pal.map(h => [h, "из кадра"]), C.caps.accent, h => { C.caps.accent = h; C.cards.accent = h; C.hook.accent = h; }, "pal"), "Подобраны по одежде и комнате на кадре. Красят выделенные слова, хук и карточки."));
+      K.append(section("Готовые образы", mk(LOOKS.filter(L => !L.genre)), "Образ меняет всё сразу: шрифты, цвета, субтитры и темп. Потом подгони что-то одно во вкладках «Хук», «Субтитры» или «Карточки»: остальное не изменится."));
     } else if (part === "hook") {
       K.append(section("Шрифт хука", fontGrid(C.hook.font, id => { C.hook.font = id; }), "Меняется только хук. Рукописные и каллиграфия здесь смотрятся лучше всего."));
       const hb = el("div"); hb.append(choices(PLATES, C.hook.kind, v => { C.hook.kind = v; }));
@@ -1025,6 +1120,9 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       K.append(section("Фон карточек", choices([["light", "Светлые"], ["dark", "Тёмные"]], C.cards.kind, v => { C.cards.kind = v; }), "Карточка в примерочной — пример. Что в ней написано, Claude решает в каждом ролике под твои слова, здесь выбирается только вид."));
       K.append(section("Цвет акцента в карточках", swatches(ACCENTS.filter(a => a[0] !== "#FFFFFF"), C.cards.accent, h => { C.cards.accent = h; }, "cacc"), "Выделенные слова в заголовках карточек."));
       K.append(section("Цвет рамок, шагов и заголовков списков", swatches(UIS, C.cards.ui, h => { C.cards.ui = h; }, "ui", C.cards.accent)));
+      const gr = el("div", "row"); Object.entries(VAR_LABEL).filter(([k]) => !["image", "sticker", "follow", "cta", "number", "text", "list"].includes(k)).forEach(([k, t]) => {
+        const on = (C.gfx || []).includes(k); gr.append(choice(t, on, () => set(() => { C.gfx = on ? C.gfx.filter(x => x !== k) : (C.gfx || []).concat(k); }))); });
+      K.append(section("Какую графику предлагать чаще", gr, "Отметь, что тебе нравится. Первые две показаны в примерке. Claude будет начинать варианты с них."));
     } else {
       const pace = el("div", "row");
       for (const [v, t] of Object.entries(PACE)) { const pb = el("span", "play", "▶"); pb.setAttribute("role", "button"); pb.setAttribute("aria-label", "Послушать: " + t);
@@ -1227,6 +1325,8 @@ ${cards || "нет"}
       else sync();
     });
     db.doc("builds/latest").onSnapshot(s => { buildDoc = s.exists ? s.data() : null; if (R && D) renderNotes(); });
+    db.doc("moodboard/items").onSnapshot(s => { MOOD = s.exists ? (s.data().items || []) : []; renderMood(); }, () => renderMood());
+    claude.use("assets").then(a => { assetsNs = a; $("moodAdd").hidden = !a || !canWrite; renderMood(); }).catch(() => {});
     db.doc("brand/current").onSnapshot(s => {
       brandDoc = s.exists ? s.data() : null; if (R && D) liveSoon();
       const md = s.exists ? (s.data().md || "") : "";

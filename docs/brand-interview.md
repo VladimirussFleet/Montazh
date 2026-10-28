@@ -58,7 +58,8 @@
   "pacing": "tight", "speed": null, "graphics": "balanced", "sfx": "subtle", "punch_in": true, "max_seconds": 60,
   "cta": {"word": null, "show_in_video": false},
   "accent_words": [], "fixes": {}, "audio": {"denoise": false},
-  "music": {"enabled": false, "below_db": 18, "duck_db": 6, "asset": null, "file": null}
+  "music": {"enabled": false, "below_db": 18, "duck_db": 6, "asset": null, "file": null},
+  "gfx_prefer": ["checklist", "flip", "bars", "word"], "gfx_like": []
 }
 ```
 
@@ -79,6 +80,7 @@
 - `fixes` — постоянные исправления распознавания: `{"нейронку": "нейросеть"}`.
 - `audio.denoise` — убрать фоновый шум, если пишут на улице.
 - `music` — музыка под голосом. `enabled` выбирается в примерочной. Сам трек человек присылает в чат: положи его в `src/music.*` папки ролика. Если трек нужен для всех роликов, загрузи его на страницу (`Artifact`, `url` страницы, `asset: true`) и запиши id из ответа в `"asset"`. В новом чате скачай его: `Artifact read` с `url` страницы и `path` = этот id, положи файл в `brand/music.<расширение>` и укажи этот путь в `"file"`. `below_db` — насколько трек тише голоса, `duck_db` — насколько он ещё приглушается, пока человек говорит.
+- `gfx_prefer` — какую графику человек хочет чаще (выбирается жанром во вкладке «Образ» и галочками во вкладке «Карточки»). `gfx_like` — то, что он отметил «В мой стиль» на «Монтажном столе». С них начинай варианты графики. `fonts.notes` — шрифт заметок от руки (по умолчанию `caveat`).
 - `page` (`url`, `ver`) и `style_saved_at` заполняют скрипты сами: адрес страницы, версия её файлов и время последнего «Сохранить стиль». Руками не трогай.
 
 ## brand.md
