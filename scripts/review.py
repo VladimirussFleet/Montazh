@@ -83,7 +83,34 @@ def describe(kind, c):
         return "Кнопка «Подписаться» с нажатием"
     if t == "sticker":
         return f"Стикер {c.get('emoji', '')}"
+    if c.get("scene"):
+        sc = c["scene"]
+        return (re.sub(r"\*", "", sc.get("title", "")) + ": " + ", ".join(PART_NAMES.get(b.get("type"), b.get("type", "")) for b in sc.get("body", []))).strip(": ")
+    if t in PART_NAMES:
+        txt = c.get("title") or c.get("text") or c.get("q") or c.get("value") or c.get("handle") or ""
+        return (PART_NAMES[t] + (": " + re.sub(r"\*", "", str(txt)) if txt else "")).strip()
     return t or kind
+
+
+PART_NAMES = {"chat": "Чат", "search": "Поиск", "checklist": "Чек-лист", "bars": "Полоски-цели", "funnel": "Воронка", "calendar": "Календарь", "profile": "Профиль",
+              "flip": "Перекидные цифры", "polaroids": "Полароиды", "phone": "Телефон", "note": "Заметка от руки", "beforeafter": "До / после", "quote": "Цитата",
+              "word": "Слово крупно", "hub": "Схема-связи", "form": "Форма", "site": "Сайт и бренд"}
+
+
+def asset_walk(o, fn):
+    """Every picture path in a card / scene / variant (file, img, files[])."""
+    if isinstance(o, list):
+        for v in o:
+            asset_walk(v, fn)
+    elif isinstance(o, dict):
+        for k in ("file", "img"):
+            if isinstance(o.get(k), str) and re.search(r"\.(png|jpe?g|webp|gif)$", o[k], re.I):
+                o[k] = fn(o[k])
+        if isinstance(o.get("files"), list):
+            o["files"] = [fn(f) for f in o["files"]]
+        for k, v in o.items():
+            if k != "m" and isinstance(v, (dict, list)):
+                asset_walk(v, fn)
 
 
 if cmd == "export":
@@ -109,11 +136,18 @@ if cmd == "export":
     if (PL.get("hook") or {}).get("lines"):
         board.append({"id": "hook", "kind": "hook", "what": describe("hook", PL["hook"]), "src": [W[0][1], PL["hook"].get("until") or W[0][1] + 2.5]})
     for k, (a, b) in enumerate(PL.get("split", [])):
-        board.append({"id": f"split{k + 1}", "kind": "split", "what": f"Сверху запись экрана, снизу ты ({sum(1 for s in PL.get('shots', []) if (s.get('m') or [[0]])[0][0] >= a - 0.01 and (s.get('m') or [[0]])[0][0] <= b)} планов)", "src": [a, b]})
+        inside = [s for s in PL.get("shots", []) if a - 0.01 <= ((s.get("m") or [[None]])[0][0] if s.get("rec") else (s.get("src") or [0])[0]) <= b]
+        n_sc = sum(1 for s in inside if s.get("scene"))
+        what = f"Сверху моушн-панели, снизу ты ({n_sc} шт.)" if n_sc and n_sc == len(inside) else f"Сверху запись экрана, снизу ты ({len(inside)} планов)"
+        board.append({"id": f"split{k + 1}", "kind": "split", "what": what, "src": [a, b]})
+    for n, s in enumerate([s for s in PL.get("shots", []) if s.get("scene")], 1):
+        if not s.get("id"):
+            s["id"] = f"s{n}"; plan_changed = True
+        board.append({"id": s["id"], "kind": "scene", "what": describe("scene", s), "src": s["src"], "vars": 1 + len(s.get("alts", []))})
     for n, c in enumerate(PL.get("cards", []), 1):
         if not c.get("id"):
             c["id"] = f"c{n}"; plan_changed = True
-        board.append({"id": c["id"], "kind": c.get("type"), "what": describe("card", c), "src": c["src"]})
+        board.append({"id": c["id"], "kind": c.get("type"), "what": describe("card", c), "src": c["src"], "vars": 1 + len(c.get("alts", []))})
     if plan_changed:
         save_json(d / "plan.json", PL)
     # stills of each graphic (needs tl.json from timeline.py)
@@ -156,15 +190,16 @@ if cmd == "export":
     # live draft on the page: the plan itself (source seconds), subtitle rules and light copies of screen recordings
     live_files = []
     LP = json.loads(json.dumps(PL))
-    for item in LP.get("cards", []) + LP.get("shots", []):
-        for key in ("file", "img"):
-            f = item.get(key)
-            if f and (d / f).exists():
-                name = "img_" + pathlib.Path(f).name
-                shutil.copy(d / f, R_DIR / name)
-                item[key] = "asset:" + name
-                if name not in live_files:
-                    live_files.append(name)
+
+    def to_asset(f):
+        if not (d / f).exists():
+            return f
+        name = "img_" + pathlib.Path(f).name
+        shutil.copy(d / f, R_DIR / name)
+        if name not in live_files:
+            live_files.append(name)
+        return "asset:" + name
+    asset_walk(LP.get("cards", []) + LP.get("shots", []), to_asset)
     FIXW = dict(BASE_FIX)
     FIXW.update({k.lower(): v for k, v in B.get("fixes", {}).items()})
     sub = {"fix": FIXW, "drop": B.get("drop_words", ["воу", "ву", "эм", "ээ", "э", "мм", "хм"]),
@@ -230,9 +265,30 @@ elif cmd == "import":
     PL["accent"] = sorted(set(Rv.get("acc", [])))
     PL["no_accent"] = sorted(set(Rv.get("noacc", [])))
     names = {g["id"]: g for g in reel["cards"]}
-    todo = []
+    todo, likes = [], []
+    items = {x["id"]: x for x in PL.get("cards", []) + PL.get("shots", []) if x.get("id")}
+    for a in Rv.get("adds") or []:      # graphics the person added on the page: a first version, Claude finishes it
+        a = dict(a)
+        PL.setdefault("cards", []).append(a)
+        items[a["id"]] = a
+        names[a["id"]] = {"what": PART_NAMES.get(a.get("type"), a.get("type")), "kind": a.get("type")}
+        todo.append(f"ДОБАВЛЕНО {a['id']} ({PART_NAMES.get(a.get('type'), a.get('type'))}) на {a['src'][0]:.2f} с исходника: проверь текст и тайминг, сделай как следует")
     for gid, st in (Rv.get("board") or {}).items():
         g = names.get(gid)
+        it = items.get(gid)
+        if it is not None and st.get("pick") and it.get("alts") and st["pick"] <= len(it["alts"]):
+            alt = it["alts"][st["pick"] - 1]
+            keep = {k: it[k] for k in ("id", "src", "keep", "x", "y", "in_split") if k in it}
+            rest = [x for i, x in enumerate([dict(it, alts=None)] + it["alts"]) if i != st["pick"]]
+            it.clear(); it.update(keep); it.update(alt)
+            it["alts"] = [{k: v for k, v in x.items() if k not in ("id", "src", "keep", "alts")} for x in rest]
+            print(f"ВЫБРАН ВАРИАНТ {gid}: {alt.get('label') or alt.get('type') or 'панель'}")
+        if it is not None and st.get("y") is not None:
+            it["y"] = st["y"]
+        if st.get("more"):
+            todo.append(f"ЕЩЁ ВАРИАНТЫ {gid} ({(g or {}).get('what', '')}): добавь 2–3 новых alts в духе выбранного")
+        if st.get("like") and it is not None:
+            likes.append(it.get("label") or it.get("type") or "панель")
         if not g:
             continue
         if st.get("state") == "d":
@@ -244,6 +300,7 @@ elif cmd == "import":
                     PL["split"][k] = None
             else:
                 PL["cards"] = [c for c in PL.get("cards", []) if c.get("id") != gid]
+                PL["shots"] = [s for s in PL.get("shots", []) if s.get("id") != gid]
             print(f"УБРАНО: {gid} ({g['what']})")
         elif st.get("state") == "c":
             todo.append(f"ИЗМЕНИТЬ {gid} ({g['what']}): {st.get('note') or '(без комментария, спроси что поменять)'}")
@@ -253,6 +310,8 @@ elif cmd == "import":
     print(f"cut.json: {len(spans)} кусков, вырезано слов: {len(cut)}; исправлений: {len(PL['fix'])}; выделений: {len(PL['accent'])}")
     for t in todo:
         print(t)
+    if likes:
+        print("В СТИЛЬ: " + ", ".join(likes) + " — допиши в brand.md «Любимая графика» и в brand.json gfx_like, потом brand_sync push")
     for n in sorted(Rv.get("notes", []), key=lambda n: n["t"]):
         where = "превью" if n.get("on") == "preview" else "черновик"
         print(f"ЗАМЕТКА {int(n['t'] // 60)}:{n['t'] % 60:04.1f} ({where}): {n['text']}")

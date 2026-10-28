@@ -99,6 +99,23 @@ elif isinstance(PL.get("zoom"), list):
     zoom = [[o(a), o(b), *rest] for a, b, *rest in PL["zoom"]]
 
 # ---------- everything else: source time -> reel time ----------
+def times(x):
+    """Item times inside a card or a motion-panel scene: "at" (one or a list), "tap", any "*_at" (e.g. "show_at")."""
+    if isinstance(x, list):
+        return [times(v) for v in x]
+    if not isinstance(x, dict):
+        return x
+    out = {}
+    for k, v in x.items():
+        if k == "src" or k == "alts":
+            out[k] = v
+        elif k in ("at", "tap") or k.endswith("_at"):
+            out[k] = [o(t) if isinstance(t, (int, float)) else t for t in v] if isinstance(v, list) else (o(v) if isinstance(v, (int, float)) else v)
+        else:
+            out[k] = times(v) if isinstance(v, (dict, list)) else v
+    return out
+
+
 hook = dict(PL.get("hook") or {})
 hook["t1"] = o(hook["until"]) if hook.get("until") is not None else 2.5
 cards = []
@@ -106,13 +123,8 @@ for c in PL.get("cards", []):
     if not c.get("keep") and sum(max(0, min(c["src"][1], q["src1"]) - max(c["src"][0], q["src0"])) for q in P) <= 0.05:
         print(f"! карточка {c.get('id') or c.get('type')} стоит целиком на вырезанных словах и не попадёт в ролик: перенеси её src или убери")
         continue
-    c = dict(c)
+    c = times(dict(c))
     c["t"] = rng(*c.pop("src"), 0.6)
-    if "at" in c:
-        c["at"] = [o(x) for x in c["at"]]
-    for k in ("type_at", "tap"):
-        if k in c:
-            c[k] = o(c[k])
     cards.append(c)
 shots = []
 for s in PL.get("shots", []):
@@ -129,6 +141,7 @@ for s in PL.get("shots", []):
             m.append([m[0][0] + 0.04, m[0][1]])
         s["m"] = m
     else:
+        s = times(s)
         s["t"] = rng(*s.pop("src"), 0.3)
     shots.append(s)
 tl = {"pieces": P, "dur": DUR, "end": round(DUR + 0.6, 2), "src_max": PL.get("src_max"),
