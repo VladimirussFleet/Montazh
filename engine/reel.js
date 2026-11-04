@@ -61,7 +61,7 @@ async function loadFonts(){
   HFN="HF";CFN="CF";KFN="KF";BFN="BF";NFN="NF";
   await loadFace("HF",head,HW);await loadFace("CF",cap,CWT);await loadFace("KF",crd,KW);await loadFace("NF",nts,NW);for(const w of[800,700,600])await loadFace("BF",body,w);await document.fonts.ready}
 
-let TL,B,FR,DIR,PC,p,BGC,SCV,OFF,PH,CX,CY,CW,CH,SHIFT,FY;
+let TL,B,FR,DIR,PC,p,BGC,SCV,OFF,PH,CX,CY,CW,CH,SHIFT,FY,FL=false;
 const cache=new Map();
 async function img(src){if(cache.has(src))return cache.get(src);const a=new Image();a.src=src;try{await a.decode()}catch(e){warn("image "+src);return null}
   cache.set(src,a);if(cache.size>40){for(const k of cache.keys()){if(!k.includes("/img/")&&!k.includes("/src/")){cache.delete(k);break}}}return a}
@@ -140,11 +140,15 @@ function stepPill(t){const S=TL.steps||[];let i=-1;for(let k=0;k<S.length;k++)if
     p.beginPath();p.arc(x+34,y,8,0,7);p.fillStyle=ui;p.fill();p.textBaseline="middle";p.textAlign="left";p.font=fB(800,28);p.letterSpacing="3px";p.fillStyle=ui;p.fillText(s[1],x+54,y+1);p.letterSpacing="0px";
     if(s[2]){p.font=fB(700,34);p.fillStyle="#F2EEE6";p.fillText(s[2],x+54+w1+20,y+1)}p.restore()};
   if(dt<0.3&&i>0)one(S[i-1],1-a,-a*14);one(S[i],a,(1-eOut3(a))*14)}
-async function drawPanel(t){p.setTransform(1,0,0,1,0,0);p.globalAlpha=1;p.drawImage(BGC,0,0);stepPill(t);
-  p.save();p.shadowColor="rgba(0,0,0,0.65)";p.shadowBlur=60;p.shadowOffsetY=20;rr(p,CX,CY,CW,CH,30);p.fillStyle=B.colors.panel_frame;p.fill();p.restore();
-  p.save();rr(p,CX,CY,CW,CH,30);p.clip();
-  for(const i of shotsAt(t)){const sh=TL.shots[i];let a=1;if(t<sh.t[0]+0.12&&i>0)a=cl((t-sh.t[0])/0.12);if(sh.scene){drawScene(sh,t,a);continue}const im=await loadShot(sh,t);drawShot(sh,im,t,a)}
-  p.restore();rr(p,CX,CY,CW,CH,30);p.lineWidth=2;p.strokeStyle=B.colors.ui+"66";p.stroke()}
+// faceless reel (layout.faceless): the whole frame is the panel background, with a slow drifting glow
+function flBg(t){p.drawImage(BGC,0,0);const x=540+Math.sin(t*0.37)*260,y=CY+CH*0.5+Math.cos(t*0.29)*300,gr=p.createRadialGradient(x,y,30,x,y,760);
+  gr.addColorStop(0,B.colors.panel_glow+"26");gr.addColorStop(1,B.colors.panel_glow+"00");p.fillStyle=gr;p.fillRect(0,0,W,PH)}
+async function drawPanel(t){p.setTransform(1,0,0,1,0,0);p.globalAlpha=1;if(FL)flBg(t);else p.drawImage(BGC,0,0);stepPill(t);
+  const ids=shotsAt(t),bare=FL&&ids.every(i=>TL.shots[i].scene);
+  if(!bare){p.save();p.shadowColor="rgba(0,0,0,0.65)";p.shadowBlur=60;p.shadowOffsetY=20;rr(p,CX,CY,CW,CH,30);p.fillStyle=B.colors.panel_frame;p.fill();p.restore()}
+  p.save();if(!bare){rr(p,CX,CY,CW,CH,30);p.clip()}
+  for(const i of ids){const sh=TL.shots[i];let a=1;if(t<sh.t[0]+0.12&&i>0)a=cl((t-sh.t[0])/0.12);if(sh.scene){drawScene(sh,t,a);continue}const im=await loadShot(sh,t);drawShot(sh,im,t,a)}
+  p.restore();if(!bare){rr(p,CX,CY,CW,CH,30);p.lineWidth=2;p.strokeStyle=B.colors.ui+"66";p.stroke()}}
 
 // ---------- cards (full-screen part) ----------
 function cardState(t,c){const[t0,t1]=c.t;if(t<t0||t>t1+0.25)return null;return{a:cl((t-t0)/0.12)*(1-cl((t-t1)/0.25)),s:eBack((t-t0)/0.42)*(1-0.08*cl((t-t1)/0.25)),d:t-t0}}
@@ -292,7 +296,7 @@ const PART={
         popIn(g,t,ti+0.1,x,y,()=>{rr(g,x-86,y-56,172,112,22);g.fillStyle="#F7F5F0";g.fill();g.lineWidth=2;g.strokeStyle="rgba(0,0,0,0.1)";g.stroke();g.textAlign="center";g.textBaseline="middle";
           if(nd[1]){g.font=`44px ${EMO}`;g.fillText(nd[1],x,y-14)}else{g.beginPath();g.arc(x,y-16,22,0,7);g.fillStyle=B.colors.ui;g.fill();g.font=fK(900,24);g.fillStyle="#141414";g.fillText(String(nd[0])[0].toUpperCase(),x,y-14)}g.font=fB(800,24);g.fillStyle=B.colors.card_text;g.fillText(nd[0],x,y+30)})});
       popIn(g,t,c.t[0]+0.2,cx,cy,()=>{g.beginPath();g.arc(cx,cy,92,0,7);g.fillStyle="#141414";g.fill();g.lineWidth=6;g.strokeStyle=B.colors.ui;g.stroke();g.font=fK(900,36);g.fillStyle="#fff";g.textAlign="center";g.textBaseline="middle";g.fillText(c.center||"Claude",cx,cy+2)});
-      if(c.count){const tc=c.count_at!=null?c.count_at:atOf(c,N.length,0.25),m=String(c.count).match(/^(\D*)([\d\s]+)(.*)$/),k=eOut3((t-tc)/1.0);
+      if(c.count){const tc=c.count_at!=null?c.count_at:atOf(c,N.length,0.25),m=String(c.count).match(/^(\D*?)(\d(?:[\d\s]*\d)?)(.*)$/),k=eOut3((t-tc)/1.0);
         popIn(g,t,tc,0,h/2-52,()=>{let s=c.count;if(m){const v=parseInt(m[2].replace(/\s/g,""));s=m[1]+fmtN(v*k)+m[3]}pill(g,0,h/2-52,s,{size:32,al:"center",bg:"#141414",fg:B.colors.ui,bd:B.colors.ui})})}}},
   form:{h(c){return 64+90+(c.fields||[]).length*108+96+((c.checks||[]).length?(c.checks.length*64+10):0)+30},
     draw(c,st,t){const w=c.w||860,h=PART.form.h(c);shadowCard(-w/2,-h/2,w,h,30,"#F7F5EF");g.save();rr(g,-w/2,-h/2,w,h,30);g.clip();g.fillStyle="#E4E0D7";g.fillRect(-w/2,-h/2,w,64);g.restore();
@@ -318,15 +322,21 @@ const PART={
 for(const k in PART)CARD[k]=PART[k].draw;
 
 // ---------- motion panel scene (split shot with "scene"): header + parts stacked, drawn live ----------
-function drawScene(sh,t,alpha){const S=sh.scene||{},keep=g;g=p;p.save();p.globalAlpha=alpha;p.fillStyle=B.colors.panel_bg;p.fillRect(CX,CY,CW,CH);
-  const gr=p.createRadialGradient(CX+CW/2,CY+CH*0.6,20,CX+CW/2,CY+CH*0.6,CW*0.8);gr.addColorStop(0,B.colors.panel_glow+"30");gr.addColorStop(1,B.colors.panel_glow+"00");p.fillStyle=gr;p.fillRect(CX,CY,CW,CH);
-  const d=t-sh.t[0];let top=CY+34;if(S.title){slideIn(p,t,sh.t[0]+0.05,0,-16,()=>{p.font=fK(900,50);p.textAlign="left";p.textBaseline="alphabetic";fit(p,s=>fK(900,s),[plain(S.title)],CW-360,50,0.6,"scene title");richLine(p,cs(S.title),CX+40,top+52,"#FFFFFF",B.colors.accent,"left")});top+=88}
-  if(S.tag)popIn(p,t,S.tag_at!=null?S.tag_at:sh.t[0]+0.3,CX+CW-120,CY+70,()=>pill(p,CX+CW-36,CY+70,S.tag,{size:26,al:"right",bg:"rgba(0,0,0,0)",bd:B.colors.ui,fg:B.colors.ui}));
-  const body=S.body||[],bot=CY+CH-(S.foot?54:26),avail=bot-top,gap=22;let tot=body.reduce((s,c)=>s+PART_H(c),0)+gap*Math.max(0,body.length-1),mw=Math.max(...body.map(c=>c.w||(c.type==="hub"||c.type==="site"||c.type==="beforeafter"?900:860)),1);
-  const sc=Math.min(1,(CW-60)/mw,avail/Math.max(1,tot));let y=top+(avail-tot*sc)/2;
+function drawScene(sh,t,alpha){const S=sh.scene||{},keep=g;g=p;p.save();p.globalAlpha=alpha;
+  if(FL)flBg(t);else{p.fillStyle=B.colors.panel_bg;p.fillRect(CX,CY,CW,CH);
+    const gr=p.createRadialGradient(CX+CW/2,CY+CH*0.6,20,CX+CW/2,CY+CH*0.6,CW*0.8);gr.addColorStop(0,B.colors.panel_glow+"30");gr.addColorStop(1,B.colors.panel_glow+"00");p.fillStyle=gr;p.fillRect(CX,CY,CW,CH)}
+  const d=t-sh.t[0],tagAt=S.tag_at!=null?S.tag_at:sh.t[0]+0.3;let top=CY+(S.pad_top!=null?S.pad_top:34);
+  if(FL){   // big header on the left: title, tag under it
+    if(S.title)slideIn(p,t,sh.t[0]+0.05,0,-20,()=>{p.textAlign="left";p.textBaseline="alphabetic";const fs=fit(p,s=>fK(900,s),[plain(S.title)],CW-40,80,0.6,"scene title");p.font=fK(900,fs);richLine(p,cs(S.title),CX+16,CY+76,"#FFFFFF",B.colors.accent,"left")});
+    if(S.tag)popIn(p,t,tagAt,CX+150,CY+140,()=>pill(p,CX+16,CY+140,S.tag,{size:28,al:"left",bg:"rgba(0,0,0,0)",bd:B.colors.ui,fg:B.colors.ui}));
+    if(S.title||S.tag)top=Math.max(top,CY+(S.tag?196:120))}
+  else{if(S.title){slideIn(p,t,sh.t[0]+0.05,0,-16,()=>{p.font=fK(900,50);p.textAlign="left";p.textBaseline="alphabetic";fit(p,s=>fK(900,s),[plain(S.title)],CW-360,50,0.6,"scene title");richLine(p,cs(S.title),CX+40,top+52,"#FFFFFF",B.colors.accent,"left")});top+=88}
+    if(S.tag)popIn(p,t,tagAt,CX+CW-120,CY+70,()=>pill(p,CX+CW-36,CY+70,S.tag,{size:26,al:"right",bg:"rgba(0,0,0,0)",bd:B.colors.ui,fg:B.colors.ui}))}
+  const body=S.body||[],bot=CY+CH-(S.foot?(FL?64:54):26),avail=bot-top,gap=FL?34:22;let tot=body.reduce((s,c)=>s+PART_H(c),0)+gap*Math.max(0,body.length-1),mw=Math.max(...body.map(c=>c.w||(c.type==="hub"||c.type==="site"||c.type==="beforeafter"?900:860)),1);
+  const sc=Math.min(FL?1.12:1,(CW-(FL?30:60))/mw,avail/Math.max(1,tot));let y=top+(avail-tot*sc)/2;
   for(const c of body){const hh=PART_H(c)*sc,t0=c.show_at!=null?c.show_at:sh.t[0]+0.15,cc=c.t?c:Object.assign(c,{t:[t0,sh.t[1]]}),k=ap(t,cc.t[0],0.4);
     if(k>0){p.save();p.globalAlpha*=cl(k*1.6);p.translate(CX+CW/2,y+hh/2+(1-eOut3(k))*24);p.scale(sc,sc);const f=CARD[c.type];if(f)f(cc,{a:1,s:1,d:t-cc.t[0]},t);else warn("unknown part "+c.type);p.restore()}y+=hh+gap*sc}
-  if(S.foot)slideIn(p,t,sh.t[0]+0.6,0,10,()=>{p.font=fB(700,24);p.fillStyle="rgba(255,255,255,0.55)";p.textAlign="center";p.textBaseline="alphabetic";p.fillText(S.foot,CX+CW/2,CY+CH-22)});
+  if(S.foot)slideIn(p,t,sh.t[0]+0.6,0,10,()=>{p.font=fB(700,FL?28:24);p.fillStyle="rgba(255,255,255,0.55)";p.textAlign="center";p.textBaseline="alphabetic";p.fillText(S.foot,CX+CW/2,CY+CH-(FL?18:22))});
   p.restore();g=keep}
 function PART_H(c){return PART[c.type]?PART[c.type].h(c):cardH(c)}
 
@@ -343,11 +353,11 @@ function cardH(c){switch(c.type){
 let CARD_BOTTOM=0;
 function cards(t,k,layer){CARD_BOTTOM=0;for(const c of TL.cards||[]){if(c.type==="image"&&c.size==="full")continue;if(k>0.01&&!c.in_split)continue;
   if(layer==="behind"?!c.behind:(c.behind&&PERSON))continue;const st=cardState(t,c);if(!st)continue;const f=CARD[c.type];if(!f){warn("unknown card "+c.type);continue}
-  const h=cardH(c),cy=c.y!=null?c.y:B.cards.top+h/2;if(c.y==null&&c.type!=="sticker"&&st.a>0.5)CARD_BOTTOM=Math.max(CARD_BOTTOM,cy+h/2);
+  const h=cardH(c),cy=c.y!=null?c.y:FL?CY+CH/2:B.cards.top+h/2;if(!FL&&c.y==null&&c.type!=="sticker"&&st.a>0.5)CARD_BOTTOM=Math.max(CARD_BOTTOM,cy+h/2);
   g.save();g.globalAlpha=st.a;g.translate(c.x||540,cy+(1-eOut3(st.d/0.42))*40);g.scale(st.s,st.s);f(c,st,t);g.restore()}}
 
 // ---------- hook + subtitles ----------
-function hook(t,k){const hk=TL.hook;if(!hk||!hk.lines||!hk.lines.length)return;let end=hk.t1||2.5;for(const[a]of TL.split||[])if(a>0.3&&a<end)end=a;
+function hook(t,k){const hk=TL.hook;if(!hk||!hk.lines||!hk.lines.length)return;let end=hk.t1||2.5;if(!FL)for(const[a]of TL.split||[])if(a>0.3&&a<end)end=a;
   const a=1-cl((t-end+0.25)/0.25);if(a<=0)return;const L=hk.lines.map(cs),st=B.hook.style;
   g.save();g.globalAlpha=a;const fs=fit(g,s=>fH(900,s),L.map(plain),860,B.hook.size,0.55,"hook");g.font=fH(900,fs);
   const lay=block(L,fs,0.98,1.06,0.08),by=hk.y||B.hook.y,bw=Math.max(...L.map(l=>g.measureText(plain(l)).width))+96,bh=lay.h+44,q=t<0.05?1:eBack(t/0.35);
@@ -376,7 +386,9 @@ async function personLayer(t,me){const mw=540,mh=960;let mk=null;
   const m=MCV.getContext("2d",{willReadFrequently:true});m.globalCompositeOperation="copy";if(mk===me)m.drawImage(me,me.videoWidth/2,0,me.videoWidth/2,me.videoHeight,0,0,mw,mh);else m.drawImage(mk,0,0,mw,mh);
   const id=m.getImageData(0,0,mw,mh),a=id.data;for(let i=0;i<a.length;i+=4){a[i+3]=a[i];a[i]=a[i+1]=a[i+2]=255}m.putImageData(id,0,0);
   const q=PCV.getContext("2d");q.globalCompositeOperation="copy";meDraw(q,me,mw,mh);q.globalCompositeOperation="destination-in";q.drawImage(MCV,0,0);q.globalCompositeOperation="source-over";return true}
-async function frame(t){const k=splitK(t);if(k>0)await drawPanel(t);
+async function frame(t){
+  if(FL){await drawPanel(t);g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.drawImage(PC,0,0);PERSON=false;fullImages(t);cards(t,0,"front");hook(t,0);subtitles(t,0);return}
+  const k=splitK(t);if(k>0)await drawPanel(t);
   g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle="#000";g.fillRect(0,0,W,H);
   const me=OPT.meImage?await OPT.meImage(t):await img(U(`mf/${pad4(meIdx(t))}.jpg`));const dy=(730-SHIFT)*k,z=zoomAt(t);
   const meT=()=>{g.translate(540,FY+dy);g.scale(z,z);g.translate(-540,-FY)};
@@ -394,12 +406,13 @@ async function frame(t){const k=splitK(t);if(k>0)await drawPanel(t);
 
 async function init(cfg){TL=cfg.tl;B=merge(DEF,cfg.brand||{});const LY=TL.layout||{};if(LY.cards_top!=null)B.cards.top=LY.cards_top;if(LY.caption_y!=null)B.captions.y=LY.caption_y;FR=cfg.frames||{me:{n:1,fps:30},rec:{}};DIR=cfg.dir;
   OFF=B.safe_top;PH=920+OFF;CX=40;CY=140+OFF;CW=1000;CH=740;SHIFT=B.split.shift;FY=B.face_y;
+  FL=!!LY.faceless;if(FL){PH=H;CH=Math.round(B.captions.y-130-CY)}   // no person: graphics fill the frame down to the subtitles
   await loadFonts();
   for(const s of TL.shots||[]){if(s.rec){s._ri=recInfo(s.rec);s.t=[s.m[0][0],s.m[s.m.length-1][0]]}}
   const files=new Set();const walk=o=>{if(!o||typeof o!=="object")return;if(Array.isArray(o)){o.forEach(walk);return}for(const k of["file","img"])if(typeof o[k]==="string"&&/\.(png|jpe?g|webp|gif)$/i.test(o[k]))files.add(o[k]);if(Array.isArray(o.files))o.files.forEach(f=>files.add(f));for(const k in o)if(k!=="m"&&typeof o[k]==="object")walk(o[k])};
   walk(TL.cards);walk((TL.shots||[]).filter(s=>s.scene));for(const f of files)await img(U(f));
   BGC=document.createElement("canvas");BGC.width=W;BGC.height=PH;{const x=BGC.getContext("2d");x.fillStyle=B.colors.panel_bg;x.fillRect(0,0,W,PH);
-    const gr=x.createRadialGradient(540,520+OFF,40,540,520+OFF,800);gr.addColorStop(0,B.colors.panel_glow+"33");gr.addColorStop(1,B.colors.panel_glow+"00");x.fillStyle=gr;x.fillRect(0,0,W,PH);
+    const gy=FL?CY+CH*0.45:520+OFF,gr=x.createRadialGradient(540,gy,40,540,gy,FL?1100:800);gr.addColorStop(0,B.colors.panel_glow+"33");gr.addColorStop(1,B.colors.panel_glow+"00");x.fillStyle=gr;x.fillRect(0,0,W,PH);
     if(B.split.dots){x.fillStyle="rgba(255,255,255,0.07)";for(let yy=14;yy<PH;yy+=28)for(let xx=14;xx<W;xx+=28){x.beginPath();x.arc(xx,yy,1.6,0,7);x.fill()}}}
   PC=document.createElement("canvas");PC.width=W;PC.height=PH;p=PC.getContext("2d");SCV=document.createElement("canvas");SCV.width=CW;SCV.height=CH;return "ok"}
 return {init,frame,warnings:()=>[...WARN],defaults:DEF,families:FAMILY,fonts:FONT_META};

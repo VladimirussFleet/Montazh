@@ -13,7 +13,9 @@ from common import ROOT, workdir, rel, load_json, brand
 
 mode, d = sys.argv[1], workdir(sys.argv[2])
 args = sys.argv[3:]
-TL, FR, B = load_json(d / "tl.json"), load_json(d / "frames.json"), brand()
+TL, B = load_json(d / "tl.json"), brand()
+# ролик без лица (plan.json "layout": {"faceless": true}) кадры человека не нужны
+FR = load_json(d / "frames.json", {"me": {"n": 1, "fps": 30}, "rec": {}} if (TL.get("layout") or {}).get("faceless") else None)
 
 
 class Q(http.server.SimpleHTTPRequestHandler):
