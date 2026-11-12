@@ -348,9 +348,9 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   const fmt = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60); return m + ":" + (s - m * 60).toFixed(1).padStart(4, "0"); };
   let db = null, R = null, D = null, buildDoc = null, tool = "cut", fixing = null, canWrite = true, lastSaved = "";
   const KIND = { hook: "Хук", text: "Карточка с текстом", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий со словом", follow: "Кнопка подписки", sticker: "Стикер", split: "Сплит", shot: "Кадр в сплите", scene: "Моушн-панель в сплите",
-    chat: "Чат", search: "Поиск", checklist: "Чек-лист", bars: "Полоски-цели", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Перекидные цифры", polaroids: "Полароиды", phone: "Телефон",
+    chat: "Чат", prompt: "Команда в поле ввода", search: "Поиск", checklist: "Чек-лист", bars: "Полоски-цели", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Перекидные цифры", polaroids: "Полароиды", phone: "Телефон",
     note: "Заметка от руки", beforeafter: "До / после", quote: "Цитата", word: "Слово крупно", hub: "Схема-связи", form: "Форма", site: "Сайт и бренд", _cutout: "Фон убран", _glow: "Свечение" };
-  const VAR_LABEL = { text: "Карточка", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий", follow: "Подписка", sticker: "Стикер", chat: "Чат", search: "Поиск", checklist: "Чек-лист",
+  const VAR_LABEL = { text: "Карточка", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий", follow: "Подписка", sticker: "Стикер", chat: "Чат", prompt: "Команда", search: "Поиск", checklist: "Чек-лист",
     bars: "Полоски", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Цифры", polaroids: "Полароиды", phone: "Телефон", note: "Заметка", beforeafter: "До / после", quote: "Цитата",
     word: "Слово крупно", hub: "Схема", form: "Форма", site: "Сайт" };
 
@@ -764,6 +764,7 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
       steps: (PL.steps || []).filter(x => !offSplit(x[0])).map(([t, ...r]) => [o(t), ...r]),
       cutout: (PL.cutout || []).concat(fxAdds.filter(a => a.type === "_cutout").map(a => [a.src[0], a.src[1], a.value])).map(([a, b, ...r]) => [...rng(a, b, 0.3), ...r]),
       glow: (PL.glow || []).concat(fxAdds.filter(a => a.type === "_glow").map(a => [a.src[0], a.src[1], a.value])).map(([a, b, ...r]) => [...rng(a, b, 0.3), ...r]),
+      faceless: (PL.faceless || []).map(([a, b]) => rng(a, b, 0.5)),
       layout: PL.layout || null };
   }
   // screen recordings: light copies that play along with the draft

@@ -42,7 +42,7 @@ if log.exists():
 
 # lip sync: longest stretch without split and cards, mouth area from brand.face_y
 tl = load_json(d / "tl.json")
-busy = [(a, b + 0.3) for a, b in tl.get("split", [])] + [(c["t"][0], c["t"][1] + 0.3) for c in tl.get("cards", [])] + [(0, 2.8)]
+busy = [(a, b + 0.3) for a, b in tl.get("split", []) + tl.get("faceless", [])] + [(c["t"][0], c["t"][1] + 0.3) for c in tl.get("cards", [])] + [(0, 2.8)]
 free, t = [], 0.0
 if (tl.get("layout") or {}).get("faceless"):
     busy = [(0, dur)]   # без лица: губ в кадре нет, проверять нечего
