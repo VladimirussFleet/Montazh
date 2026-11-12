@@ -405,7 +405,7 @@ async function frame(t){
   fullImages(t);cards(t,k,"front");hook(t,k);subtitles(t,k)};
 
 async function init(cfg){TL=cfg.tl;B=merge(DEF,cfg.brand||{});const LY=TL.layout||{};if(LY.cards_top!=null)B.cards.top=LY.cards_top;if(LY.caption_y!=null)B.captions.y=LY.caption_y;FR=cfg.frames||{me:{n:1,fps:30},rec:{}};DIR=cfg.dir;
-  OFF=B.safe_top;PH=920+OFF;CX=40;CY=140+OFF;CW=1000;CH=740;SHIFT=B.split.shift;FY=B.face_y;
+  OFF=LY.split_top!=null?LY.split_top:B.safe_top;PH=920+OFF;CX=40;CY=140+OFF;CW=1000;CH=740;SHIFT=LY.split_shift!=null?LY.split_shift:B.split.shift;FY=B.face_y;   // split_top / split_shift — сдвиг сплита в одном ролике
   FL=!!LY.faceless;if(FL){PH=H;CH=Math.round(B.captions.y-130-CY)}   // no person: graphics fill the frame down to the subtitles
   await loadFonts();
   for(const s of TL.shots||[]){if(s.rec){s._ri=recInfo(s.rec);s.t=[s.m[0][0],s.m[s.m.length-1][0]]}}
