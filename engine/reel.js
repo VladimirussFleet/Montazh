@@ -211,6 +211,9 @@ function imgOf(f){return f?cache.get(U(f)):null}
 function cover(c,im,x,y,w,h){if(!im)return;const s=Math.max(w/im.width,h/im.height),iw=im.width*s,ih=im.height*s;c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.drawImage(im,x+(w-iw)/2,y+(h-ih)/2,iw,ih);c.restore()}
 function textH(font,txt,maxw,lh){g.font=font;return wrap(g,txt,maxw).length*lh}
 
+// prompt layout: a long command wraps onto up to 3 lines and the field grows
+function prLay(c){const w=c.w||900,fw=w-68,q=String(c.q||""),mx=fw-190,sz=c.size||62;g.font=fB(800,sz);if(g.measureText(q).width<=mx)return{w,fw,fs:sz,L:[q],fh:128};
+  let fs=Math.round(sz*0.74);g.font=fB(800,fs);let L=wrap(g,q,mx);while(L.length>3&&fs>30){fs-=2;g.font=fB(800,fs);L=wrap(g,q,mx)}return{w,fw,fs,L,fh:Math.round(L.length*fs*1.22+60)}}
 // checklist rows: a narrow card (w < 700) wraps long items onto two lines
 function clRows(c){const w=c.w||860,fs=c.fs||36;g.font=fB(800,fs);return (c.items||[]).map(it=>{const L=w<700&&g.measureText(plain(it)).width>w-160?wrap(g,plain(it),w-160):[it];return{L,h:Math.max(84,Math.round(L.length*fs*1.16+44))}})}
 const PART={
@@ -224,24 +227,34 @@ const PART={
         if(t<t1+0.55){for(let i=0;i<3;i++){g.beginPath();g.arc(x0+44+i*26,ay+80,8+3*Math.max(0,Math.sin(t*9-i)),0,7);g.fillStyle="#B9B3A6";g.fill()}return}
         g.globalAlpha*=ap(t,t1+0.55,0.3);g.font=fB(700,36);g.fillStyle=B.colors.card_text;al.forEach((l,i)=>g.fillText(l,x0+30,ay+84+i*46))})}},
   // prompt: attached video, the command is typed into an input field, send, "working…" → ✓ status
-  prompt:{h(c){return 40+(c.file?172:0)+146+(c.status?100:0)+32},
-    draw(c,st,t){const w=c.w||900,h=PART.prompt.h(c),q=String(c.q||""),cps=c.cps||22,t0=atOf(c,0),t1=c.at&&c.at[1]!=null?c.at[1]:t0+q.length/cps+0.3,x0=-w/2+34;
+  prompt:{h(c){const P=prLay(c);return 40+(c.file?172:0)+P.fh+18+(c.status?100:0)+32},
+    draw(c,st,t){const P=prLay(c),w=P.w,h=PART.prompt.h(c),q=String(c.q||""),cps=c.cps||22,t0=atOf(c,0),t1=c.at&&c.at[1]!=null?c.at[1]:t0+q.length/cps+0.3,x0=-w/2+34;
       shadowCard(-w/2,-h/2,w,h,44);let y=-h/2+40;
       if(c.file){const im=imgOf(c.file);rr(g,x0,y,480,150,26);g.fillStyle=SOFT;g.fill();
-        g.save();rr(g,x0+14,y+13,94,124,16);g.clip();g.fillStyle="#222";g.fill();if(im)cover(g,im,x0+14,y+13,94,124);g.fillStyle="rgba(0,0,0,0.28)";g.fillRect(x0+14,y+13,94,124);g.restore();
-        g.fillStyle="#fff";g.beginPath();g.moveTo(x0+50,y+57);g.lineTo(x0+50,y+93);g.lineTo(x0+80,y+75);g.closePath();g.fill();
+        g.save();rr(g,x0+14,y+13,94,124,16);g.clip();g.fillStyle="#222";g.fill();if(im)cover(g,im,x0+14,y+13,94,124);if(c.file_play!==false){g.fillStyle="rgba(0,0,0,0.28)";g.fillRect(x0+14,y+13,94,124)}g.restore();
+        if(c.file_play!==false){g.fillStyle="#fff";g.beginPath();g.moveTo(x0+50,y+57);g.lineTo(x0+50,y+93);g.lineTo(x0+80,y+75);g.closePath();g.fill()}
         g.textAlign="left";g.textBaseline="alphabetic";g.font=fB(800,38);g.fillStyle=B.colors.card_text;g.fillText(c.file_label||"video.mov",x0+132,y+66);
         g.font=fB(700,30);g.fillStyle=MUT;g.fillText(c.file_sub||"видео",x0+132,y+110);y+=172}
-      const fw=w-68,fh=128,typing=t>=t0-0.05&&t<t1;rr(g,x0,y,fw,fh,64);g.fillStyle="#FFFFFF";g.fill();g.lineWidth=typing?5:3;g.strokeStyle=typing?B.colors.ui:"rgba(0,0,0,0.14)";g.stroke();
-      const s=typed(q,t,t0,cps),fs=fit(g,z=>fB(800,z),[q],fw-190,c.size||62,0.6,"prompt");g.textAlign="left";g.textBaseline="middle";
-      if(!s.length){g.font=fB(700,Math.round(fs*0.72));g.fillStyle="#B5AFA3";g.fillText(c.hint||"Напиши, что сделать…",x0+48,y+fh/2+2);if(t<t1)caret(g,x0+44,y+fh/2+fs*0.38,fs,t)}
-      else{g.font=fB(800,fs);g.fillStyle=B.colors.card_text;g.fillText(s,x0+48,y+fh/2+2);if(t<t1)caret(g,x0+48+g.measureText(s).width,y+fh/2+fs*0.38,fs,t)}
-      const bx=x0+fw-70,by=y+fh/2,pr=t>=t1&&t<t1+0.16?0.84:1;g.save();g.translate(bx,by);g.scale(pr,pr);g.beginPath();g.arc(0,0,48,0,7);g.fillStyle=s.length?"#141414":"#D9D4CA";g.fill();
+      const fw=P.fw,fh=P.fh,fs=P.fs,typing=t>=t0-0.05&&t<t1;rr(g,x0,y,fw,fh,Math.min(64,fh/2));g.fillStyle="#FFFFFF";g.fill();g.lineWidth=typing?5:3;g.strokeStyle=typing?B.colors.ui:"rgba(0,0,0,0.14)";g.stroke();
+      const n=typed(q,t,t0,cps).length;g.textAlign="left";g.textBaseline="middle";const ly=i=>P.L.length>1?y+30+fs*0.61+i*fs*1.22:y+fh/2+2;
+      if(!n){g.font=fB(700,Math.round(fs*(P.L.length>1?0.9:0.72)));g.fillStyle="#B5AFA3";g.fillText(c.hint||"Напиши, что сделать…",x0+48,ly(0));if(t<t1)caret(g,x0+44,ly(0)+fs*0.38,fs,t)}
+      else{g.font=fB(800,fs);g.fillStyle=B.colors.card_text;let k=0,car=null;P.L.forEach((l,i)=>{const part=l.slice(0,Math.max(0,n-k));if(part.length)g.fillText(part,x0+48,ly(i));if(n>=k&&n<=k+l.length)car=[x0+48+g.measureText(part).width,ly(i)];k+=l.length+1});
+        if(t<t1&&car)caret(g,car[0],car[1]+fs*0.38,fs,t)}
+      const bx=x0+fw-70,by=y+fh-64,pr=t>=t1&&t<t1+0.16?0.84:1;g.save();g.translate(bx,by);g.scale(pr,pr);g.beginPath();g.arc(0,0,48,0,7);g.fillStyle=n?"#141414":"#D9D4CA";g.fill();
       g.strokeStyle="#fff";g.lineWidth=8;g.lineCap="round";g.lineJoin="round";g.beginPath();g.moveTo(0,19);g.lineTo(0,-18);g.moveTo(-16,-2);g.lineTo(0,-19);g.lineTo(16,-2);g.stroke();g.restore();y+=fh+18;
       if(c.status&&t>=t1+0.08){const d=t-t1-0.08,wk=c.work!=null?c.work:0.45,cy=y+44;g.save();g.globalAlpha*=cl(d/0.15);g.textAlign="left";g.textBaseline="middle";
         if(d<wk){for(let i=0;i<3;i++){g.beginPath();g.arc(x0+26+i*30,cy,9+4*Math.max(0,Math.sin(t*9-i)),0,7);g.fillStyle="#B9B3A6";g.fill()}g.font=fB(700,38);g.fillStyle=MUT;g.fillText(c.working||"Монтирую…",x0+120,cy+2)}
         else{const k=ap(t,t1+0.08+wk,0.3);g.beginPath();g.arc(x0+32,cy,30*eBack(k),0,7);g.fillStyle=GREEN;g.fill();check(g,x0+32,cy+1,30,"#fff");g.font=fB(800,40);g.fillStyle=B.colors.card_text;g.fillText(c.status,x0+82,cy+2)}
         g.restore()}}},
+  // toggle: a segmented switch (e.g. «Чат | Работа»), the knob slides to another option at at[0]
+  toggle:{h(c){return c.label?236:180},
+    draw(c,st,t){const w=c.w||760,h=PART.toggle.h(c),O=c.options||["Чат","Работа"],n=O.length;shadowCard(-w/2,-h/2,w,h,40);let y=-h/2+40;
+      if(c.label){g.font=fB(700,30);g.fillStyle=MUT;g.textAlign="left";g.textBaseline="middle";g.fillText(c.label,-w/2+40,y+14);y+=56}
+      const tx=-w/2+30,tw=w-60,th=100,sw=tw/n,from=c.from||0,to=c.to!=null?c.to:n-1,t0=atOf(c,0),pos=lerp(from,to,eOut3(ap(t,t0,0.35)));
+      rr(g,tx,y,tw,th,50);g.fillStyle=SOFT;g.fill();
+      g.save();g.shadowColor="rgba(0,0,0,0.18)";g.shadowBlur=14;g.shadowOffsetY=4;rr(g,tx+6+pos*sw,y+6,sw-12,th-12,44);g.fillStyle="#141414";g.fill();g.restore();
+      O.forEach((o,i)=>{g.font=fB(800,44);g.textAlign="center";g.textBaseline="middle";g.fillStyle=Math.abs(pos-i)<0.5?"#FFFFFF":MUT;g.fillText(o,tx+sw*(i+0.5),y+th/2+2)});
+      const tt=t-t0;if(tt>-0.02&&tt<0.55){const r=cl(tt/0.55);g.beginPath();g.arc(tx+sw*(to+0.5),y+th/2,34+80*r,0,7);g.lineWidth=6;g.strokeStyle=`rgba(255,207,77,${1-r})`;g.stroke()}}},
   search:{h(c){return 32+96+18+(c.status?78:0)+(c.rows||[]).length*112+22},
     draw(c,st,t){const w=c.w||860,h=PART.search.h(c);shadowCard(-w/2,-h/2,w,h,36);let y=-h/2+32;const t0=atOf(c,0);
       rr(g,-w/2+30,y,w-60,96,48);g.fillStyle=SOFT;g.fill();g.save();g.strokeStyle="#141414";g.lineWidth=6;g.beginPath();g.arc(-w/2+86,y+44,16,0,7);g.moveTo(-w/2+98,y+57);g.lineTo(-w/2+112,y+71);g.stroke();g.restore();
