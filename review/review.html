@@ -348,9 +348,9 @@ textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);bor
   const fmt = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60); return m + ":" + (s - m * 60).toFixed(1).padStart(4, "0"); };
   let db = null, R = null, D = null, buildDoc = null, tool = "cut", fixing = null, canWrite = true, lastSaved = "";
   const KIND = { hook: "Хук", text: "Карточка с текстом", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий со словом", follow: "Кнопка подписки", sticker: "Стикер", split: "Сплит", shot: "Кадр в сплите", scene: "Моушн-панель в сплите",
-    chat: "Чат", prompt: "Команда в поле ввода", toggle: "Переключатель режима", search: "Поиск", checklist: "Чек-лист", bars: "Полоски-цели", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Перекидные цифры", polaroids: "Полароиды", phone: "Телефон",
+    chat: "Чат", prompt: "Команда в поле ввода", toggle: "Переключатель режима", search: "Поиск", checklist: "Чек-лист", bars: "Полоски-цели", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Перекидные цифры", polaroids: "Полароиды", gallery: "Галерея картинок", phone: "Телефон",
     note: "Заметка от руки", beforeafter: "До / после", quote: "Цитата", word: "Слово крупно", hub: "Схема-связи", form: "Форма", site: "Сайт и бренд", _cutout: "Фон убран", _glow: "Свечение" };
-  const VAR_LABEL = { text: "Карточка", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий", follow: "Подписка", sticker: "Стикер", chat: "Чат", prompt: "Команда", toggle: "Переключатель", search: "Поиск", checklist: "Чек-лист",
+  const VAR_LABEL = { text: "Карточка", list: "Список", image: "Картинка", number: "Число", cta: "Комментарий", follow: "Подписка", sticker: "Стикер", chat: "Чат", prompt: "Команда", toggle: "Переключатель", gallery: "Галерея", search: "Поиск", checklist: "Чек-лист",
     bars: "Полоски", funnel: "Воронка", calendar: "Календарь", profile: "Профиль", flip: "Цифры", polaroids: "Полароиды", phone: "Телефон", note: "Заметка", beforeafter: "До / после", quote: "Цитата",
     word: "Слово крупно", hub: "Схема", form: "Форма", site: "Сайт" };
 

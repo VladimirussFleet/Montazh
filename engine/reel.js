@@ -211,6 +211,8 @@ function imgOf(f){return f?cache.get(U(f)):null}
 function cover(c,im,x,y,w,h){if(!im)return;const s=Math.max(w/im.width,h/im.height),iw=im.width*s,ih=im.height*s;c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.drawImage(im,x+(w-iw)/2,y+(h-ih)/2,iw,ih);c.restore()}
 function textH(font,txt,maxw,lh){g.font=font;return wrap(g,txt,maxw).length*lh}
 
+// gallery layout: tiles in rows of `cols`, the last row centred
+function galLay(c){const n=(c.files||[]).length||1,cols=c.cols||Math.min(n,4),rows=Math.ceil(n/cols),w=c.w||940,gap=c.gap||18,tw=(w-gap*(cols-1))/cols,th=tw*(c.ratio||16/9);return{n,cols,rows,w,gap,tw,th,h:rows*th+(rows-1)*gap}}
 // prompt layout: a long command wraps onto up to 3 lines and the field grows
 function prLay(c){const w=c.w||900,fw=w-68,q=String(c.q||""),mx=fw-190,sz=c.size||62;g.font=fB(800,sz);if(g.measureText(q).width<=mx)return{w,fw,fs:sz,L:[q],fh:128};
   let fs=Math.round(sz*0.74);g.font=fB(800,fs);let L=wrap(g,q,mx);while(L.length>3&&fs>30){fs-=2;g.font=fB(800,fs);L=wrap(g,q,mx)}return{w,fw,fs,L,fh:Math.round(L.length*fs*1.22+60)}}
@@ -246,6 +248,17 @@ const PART={
         if(d<wk){for(let i=0;i<3;i++){g.beginPath();g.arc(x0+26+i*30,cy,9+4*Math.max(0,Math.sin(t*9-i)),0,7);g.fillStyle="#B9B3A6";g.fill()}g.font=fB(700,38);g.fillStyle=MUT;g.fillText(c.working||"Монтирую…",x0+120,cy+2)}
         else{const k=ap(t,t1+0.08+wk,0.3);g.beginPath();g.arc(x0+32,cy,30*eBack(k),0,7);g.fillStyle=GREEN;g.fill();check(g,x0+32,cy+1,30,"#fff");g.font=fB(800,40);g.fillStyle=B.colors.card_text;g.fillText(c.status,x0+82,cy+2)}
         g.restore()}}},
+  // gallery: a grid of pictures popping in one by one on words, with an optional label and number on each
+  gallery:{h(c){return galLay(c).h},
+    draw(c,st,t){const L=galLay(c),fs=c.files||[],lb=c.labels||[],nb=c.numbers;
+      fs.forEach((f,i)=>{const r=Math.floor(i/L.cols),inRow=Math.min(L.cols,L.n-r*L.cols),col=i-r*L.cols,rowW=inRow*L.tw+(inRow-1)*L.gap,
+        x=-rowW/2+col*(L.tw+L.gap),y=-L.h/2+r*(L.th+L.gap),k=ap(t,atOf(c,i,0.12),0.35);if(k<=0)return;
+        g.save();g.translate(x+L.tw/2,y+L.th/2);const z=lerp(0.55,1,eBack(k));g.scale(z,z);g.globalAlpha*=cl(k*2.5);
+        g.save();g.shadowColor="rgba(0,0,0,0.4)";g.shadowBlur=24;g.shadowOffsetY=8;rr(g,-L.tw/2,-L.th/2,L.tw,L.th,18);g.fillStyle="#fff";g.fill();g.restore();
+        g.save();rr(g,-L.tw/2,-L.th/2,L.tw,L.th,18);g.clip();const im=imgOf(f);if(im)cover(g,im,-L.tw/2,-L.th/2,L.tw,L.th);g.restore();
+        if(lb[i]){g.font=fB(800,Math.round(L.tw*0.14));const tw=g.measureText(lb[i]).width+28,bh=Math.round(L.tw*0.2);rr(g,-tw/2,L.th/2-bh-12,tw,bh,bh/2);g.fillStyle="rgba(15,15,18,0.82)";g.fill();g.fillStyle="#fff";g.textAlign="center";g.textBaseline="middle";g.fillText(lb[i],0,L.th/2-bh/2-11)}
+        if(nb){const R=Math.round(L.tw*0.15);g.beginPath();g.arc(-L.tw/2+R+10,-L.th/2+R+10,R,0,7);g.fillStyle=B.colors.accent;g.fill();g.font=fB(900,Math.round(R*1.15));g.fillStyle="#141414";g.textAlign="center";g.textBaseline="middle";g.fillText(typeof nb==="string"?nb.replace("#",i+1):String(i+1),-L.tw/2+R+10,-L.th/2+R+12)}
+        g.restore()})}},
   // toggle: a segmented switch (e.g. «Чат | Работа»), the knob slides to another option at at[0]
   toggle:{h(c){return c.label?236:180},
     draw(c,st,t){const w=c.w||760,h=PART.toggle.h(c),O=c.options||["Чат","Работа"],n=O.length;shadowCard(-w/2,-h/2,w,h,40);let y=-h/2+40;
