@@ -109,6 +109,8 @@ def times(x):
     for k, v in x.items():
         if k == "src" or k == "alts":
             out[k] = v
+        elif k in ("cursor", "cam") and isinstance(v, list):   # keyframes [[t, ...], ...]
+            out[k] = [[o(e[0])] + list(e[1:]) if isinstance(e, list) and e and isinstance(e[0], (int, float)) else e for e in v]
         elif k in ("at", "tap") or k.endswith("_at"):
             out[k] = [o(t) if isinstance(t, (int, float)) else t for t in v] if isinstance(v, list) else (o(v) if isinstance(v, (int, float)) else v)
         else:
