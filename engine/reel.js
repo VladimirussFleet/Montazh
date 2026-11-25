@@ -127,7 +127,8 @@ function drawShot(sh,im,t,alpha){if(!im||alpha<=0)return;p.save();p.globalAlpha=
     for(const h of TL.hl||[]){if(h[2]!==sh.rec||h[0]<sh.t[0]-0.01||h[0]>sh.t[1]||t<h[0]-0.05||t>h[1]+0.35)continue;const[x,y,w,hh]=h[3];const a=cl((t-h[0])/0.2)*(1-cl((t-h[1])/0.3));
       bubbleHL(p,CX+x*SC,CY+(y-cy)*SC,w*SC,hh*SC,a,h[4],t-h[0])}
     for(const tp of TL.taps||[]){if(tp[1]!==sh.rec||tp[0]<sh.t[0]-0.01||tp[0]>sh.t[1])continue;tap(p,CX+tp[2]*SC,CY+(tp[3]-cy)*SC,t-tp[0])}
-    if(sh.ff)ffBadge(cl((t-sh.t[0])/0.12)*(1-cl((t-sh.t[1]+0.1)/0.12)))}
+    if(sh.ff)ffBadge(cl((t-sh.t[0])/0.12)*(1-cl((t-sh.t[1]+0.1)/0.12)));
+    if(sh.credit){p.save();pill(p,CX+24,CY+CH-40,sh.credit,{size:26,al:"left",bg:"rgba(10,10,12,0.72)",fg:"#FFFFFF",h:50,pad:18});p.restore()}}
   else{const d=t-sh.t[0],u=eIO((d-0.35)/Math.max(0.1,sh.t[1]-sh.t[0]-0.7)),h=im.height*CW/im.width,off=Math.max(0,h-CH)*u,s=lerp(1.06,1,eOut3(d/0.45));
     p.fillStyle="#fff";p.fillRect(CX,CY,CW,CH);p.save();p.translate(CX+CW/2,CY+CH/2);p.scale(s,s);p.translate(-(CX+CW/2),-(CY+CH/2));
     if(h>=CH)p.drawImage(im,CX,CY-off,CW,h);else{const w2=im.width*CH/im.height;if(w2>=CW)p.drawImage(im,CX-(w2-CW)/2,CY,w2,CH);else p.drawImage(im,CX,CY+(CH-h)/2,CW,h)}p.restore();
