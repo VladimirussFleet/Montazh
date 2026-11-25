@@ -227,7 +227,7 @@ function wbH(b,cw){const k=b.k;g.font=fM(700,b.fs||30);
   if(k==="user")return wrap(g,"> "+(b.text||""),cw-20).length*Math.round((b.fs||30)*1.4)+22;
   if(k==="text"){g.font=fB(700,b.fs||28);return wrap(g,b.text||"",cw-10).length*Math.round((b.fs||28)*1.38)+14}
   if(k==="code")return (b.lines||[]).length*Math.round((b.fs||26)*1.5)+16;
-  return {row:86,big:118,tool:58,progress:92,cand:124,ask:60,ok:62,bad:62,gap:b.h||20,head:74}[k]||60}
+  return {count:200,row:86,big:118,tool:58,progress:92,cand:124,ask:60,ok:62,bad:62,gap:b.h||20,head:74}[k]||60}
 function wbDraw(b,x,y,cw,t,T){const k=b.k,a0=b.at;g.textAlign="left";g.textBaseline="middle";
   if(k==="head"){g.font=fK(900,b.fs||40);g.fillStyle=T.tx;g.fillText(b.text||"",x,y+34);if(b.sub){g.font=fB(700,24);g.fillStyle=T.mu;g.textAlign="right";g.fillText(b.sub,x+cw,y+36)}return}
   if(k==="row"){const hl=b.hl_at!=null?b.hl_at:b.hl,on=hl!=null&&t>=hl,kk=on?eOut3((t-hl)/0.35):0;rr(g,x,y+4,cw,74,18);g.fillStyle=on?`rgba(217,178,91,${0.18*kk})`:T.card;g.fill();if(on){g.save();g.lineWidth=4;g.strokeStyle=B.colors.ui;g.globalAlpha*=kk;rr(g,x,y+4,cw,74,18);g.stroke();g.restore()}
@@ -235,6 +235,8 @@ function wbDraw(b,x,y,cw,t,T){const k=b.k,a0=b.at;g.textAlign="left";g.textBasel
     g.font=fK(900,30);g.fillStyle=on?B.colors.card_accent:T.mu;g.fillText(String(b.rank||""),x+24,y+42);if(b.skel)return;
     g.font=fM(800,30);g.fillStyle=T.tx;g.fillText(b.name||"",x+70,y+(b.sub?30:42));if(b.sub){g.font=fB(700,21);g.fillStyle=T.mu;g.fillText(b.sub,x+70,y+60)}
     if(b.val){g.font=fK(900,30);g.textAlign="right";g.fillStyle=on?B.colors.card_accent:T.tx;g.fillText(b.val,x+cw-24,y+42)}return}
+  if(k==="count"){const ca=b.count_at!=null?b.count_at:a0,kk=eOut3(cl((t-ca)/(b.dur||1.6)));let fs=b.fs||104;g.font=fK(900,fs);const txt=fmtN(Math.round((b.n||0)*kk));while(fs>40&&g.measureText(fmtN(b.n||0)).width>cw-20){fs-=4;g.font=fK(900,fs)}
+    g.textAlign="center";g.fillStyle=t>=ca+(b.dur||1.6)?B.colors.card_accent:T.tx;g.fillText(txt,x+cw/2,y+78);if(b.label&&t>=(b.label_at!=null?b.label_at:a0))popIn(g,t,b.label_at!=null?b.label_at:a0,x+cw/2,y+156,()=>{g.font=fB(800,b.lfs||32);g.fillStyle=T.tx;g.textAlign="center";g.fillText(b.label,x+cw/2,y+156)},0.3);return}
   if(k==="big"){popIn(g,t,a0,x+cw/2,y+58,()=>pill(g,x+cw/2,y+58,b.text||"",{size:b.fs||40,al:"center",bg:B.colors.ui,fg:"#141414",pad:30}));return}
   if(k==="user"){const fs=b.fs||30,lh=Math.round(fs*1.4),full="> "+(b.text||""),q="> "+typed(b.text||"",t,a0,b.cps||24);g.font=fM(700,fs);const L=wrap(g,full,cw-20);let n=q.length;
     L.forEach((l,i)=>{const part=l.slice(0,Math.max(0,n));n-=l.length+1;if(!part)return;const yy=y+10+i*lh+lh/2;if(i===0){g.fillStyle=B.colors.ui;g.fillText(">",x,yy);g.fillStyle=T.tx;g.fillText(part.slice(1),x+g.measureText(">").width,yy)}else{g.fillStyle=T.tx;g.fillText(part,x,yy)}
@@ -744,7 +746,7 @@ function drawScene(sh,t,alpha){const S=sh.scene||{},keep=g;g=p;p.save();p.global
     if(S.tag)popIn(p,t,tagAt,CX+CW-120,CY+70,()=>pill(p,CX+CW-36,CY+70,S.tag,{size:26,al:"right",bg:"rgba(0,0,0,0)",bd:B.colors.ui,fg:B.colors.ui}))}
   const body=S.body||[],bot=CY+CH-(S.foot?(FL?64:54):26),avail=bot-top,gap=FL?34:22;let tot=body.reduce((s,c)=>s+PART_H(c),0)+gap*Math.max(0,body.length-1),mw=Math.max(...body.map(c=>c.w||(c.type==="hub"||c.type==="site"||c.type==="beforeafter"?900:c.type==="window"?940:860)),1);
   const sc=Math.min(FL?1.12:1,(CW-(FL?30:60))/mw,avail/Math.max(1,tot));let y=top+(avail-tot*sc)/2;
-  for(const c of body){const hh=PART_H(c)*sc,t0=c.show_at!=null?c.show_at:sh.t[0]+0.15,cc=c.t?c:Object.assign(c,{t:[t0,sh.t[1]]}),k=ap(t,cc.t[0],0.4);
+  for(const c of body){const hh=PART_H(c)*sc,t0=c.show_at!=null?c.show_at:sh.t[0]+0.15,cc=c.t?c:Object.assign(c,{t:[t0,sh.t[1]]}),k=cc.t[0]<=0.05?1:ap(t,cc.t[0],0.4);
     if(k>0){p.save();p.globalAlpha*=cl(k*1.6);p.translate(CX+CW/2,y+hh/2+(1-eOut3(k))*24);p.scale(sc,sc);const f=CARD[c.type];if(f)f(cc,{a:1,s:1,d:t-cc.t[0]},t);else warn("unknown part "+c.type);p.restore()}y+=hh+gap*sc}
   if(S.foot)slideIn(p,t,sh.t[0]+0.6,0,10,()=>{p.font=fB(700,FL?28:24);p.fillStyle="rgba(255,255,255,0.55)";p.textAlign="center";p.textBaseline="alphabetic";p.fillText(S.foot,CX+CW/2,CY+CH-(FL?18:22))});
   p.restore();g=keep}
